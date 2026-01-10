@@ -1389,10 +1389,30 @@
         // ============ RENDER ============
         function renderLeads() {
             const tbody = document.querySelector('.table tbody');
-            const leads = getLeads();
+            const allLeads = getLeads();
+
+            // Get filter values
+            const filterStage = document.querySelector('.filter-select')?.value || '';
+            const searchTerm = document.querySelector('.search-input')?.value?.toLowerCase() || '';
+
+            // Filter leads
+            let leads = allLeads;
+            if (filterStage) {
+                leads = leads.filter(l => l.stage === filterStage);
+            }
+            if (searchTerm) {
+                leads = leads.filter(l =>
+                    l.name.toLowerCase().includes(searchTerm) ||
+                    l.phone.includes(searchTerm) ||
+                    l.location?.toLowerCase().includes(searchTerm)
+                );
+            }
 
             if (leads.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary);">No leads yet. Click "Add New Lead" to get started!</td></tr>';
+                const msg = allLeads.length === 0
+                    ? 'No leads yet. Click "Add New Lead" to get started!'
+                    : 'No leads match your filters.';
+                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary);">${msg}</td></tr>`;
                 return;
             }
 
@@ -1472,6 +1492,11 @@
         document.addEventListener('DOMContentLoaded', () => {
             initDemoData();
             document.querySelector('.btn-primary').onclick = openModal;
+
+            // Filter and Search listeners
+            document.querySelector('.filter-select').addEventListener('change', renderLeads);
+            document.querySelector('.search-input').addEventListener('input', renderLeads);
+
             renderLeads();
             updateStats();
         });
