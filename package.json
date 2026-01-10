@@ -1,0 +1,9 @@
+{
+    "name": "lead-agent",
+    "version": "1.0.0",
+    "description": "Real Estate Lead Management CRM",
+    "scripts": {
+        "dev": "npx serve .",
+        "build": "echo 'Static site - no build needed'"
+    }
+}
