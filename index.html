@@ -1057,8 +1057,38 @@
         }
 
         // ============ INIT ============
+        function initDemoData() {
+            if (localStorage.getItem('leadagent_initialized')) return;
+
+            const demoLeads = [
+                { id: 1, name: 'Vikram Mehta', phone: '9823456001', property: '3 BHK', location: 'Baner', budgetMin: 80, budgetMax: 120, source: 'Facebook', stage: 'visited', score: 85, notes: 'Looking for school nearby', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 2, name: 'Sneha Kulkarni', phone: '9823456002', property: '2 BHK', location: 'Hinjewadi', budgetMin: 50, budgetMax: 70, source: '99acres', stage: 'negotiating', score: 78, notes: 'NRI buyer, visiting next week', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 3, name: 'Ramesh Joshi', phone: '9823456003', property: '2 BHK', location: 'Chinchwad', budgetMin: 40, budgetMax: 55, source: 'Referral', stage: 'new', score: 72, notes: 'First time buyer', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 4, name: 'Dr. Anjali Deshmukh', phone: '9823456004', property: '4 BHK', location: 'Koregaon Park', budgetMin: 150, budgetMax: 250, source: 'Walk-in', stage: 'booked', score: 92, notes: 'Token paid - 5L', createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 5, name: 'Sunil Pawar', phone: '9823456005', property: '2 BHK', location: 'Hadapsar', budgetMin: 35, budgetMax: 45, source: 'Google', stage: 'contacted', score: 65, notes: 'Looking for PMAY benefits', createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 6, name: 'Priya Sharma', phone: '9823456006', property: '3 BHK', location: 'Wakad', budgetMin: 70, budgetMax: 90, source: 'Instagram', stage: 'scheduled', score: 75, notes: 'Site visit tomorrow 11am', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 7, name: 'Amit Kumar', phone: '9823456007', property: '1 BHK', location: 'Kharadi', budgetMin: 30, budgetMax: 40, source: 'MagicBricks', stage: 'new', score: 60, notes: 'Investment purpose', createdAt: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 8, name: 'Kavita Patil', phone: '9823456008', property: '2 BHK', location: 'Aundh', budgetMin: 55, budgetMax: 70, source: 'Referral', stage: 'visited', score: 80, notes: 'Liked Blue Ridge property', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 9, name: 'Rajesh Gupta', phone: '9823456009', property: 'Villa', location: 'Baner', budgetMin: 200, budgetMax: 350, source: 'Walk-in', stage: 'negotiating', score: 88, notes: 'Serious buyer, cash ready', createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 10, name: 'Meena Deshpande', phone: '9823456010', property: '3 BHK', location: 'Kothrud', budgetMin: 80, budgetMax: 100, source: 'Facebook', stage: 'contacted', score: 70, notes: 'Prefers older buildings', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 11, name: 'Arun Desai', phone: '9823456011', property: '2 BHK', location: 'Viman Nagar', budgetMin: 60, budgetMax: 75, source: '99acres', stage: 'lost', score: 45, notes: 'Bought from competitor', createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 12, name: 'Pooja Chavan', phone: '9823456012', property: '3 BHK', location: 'Hinjewadi', budgetMin: 75, budgetMax: 95, source: 'Google', stage: 'scheduled', score: 77, notes: 'Works at Infosys', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 13, name: 'Sanjay Bhosale', phone: '9823456013', property: 'Plot', location: 'Wakad', budgetMin: 40, budgetMax: 60, source: 'Referral', stage: 'new', score: 55, notes: 'Long-term investment', createdAt: new Date().toISOString() },
+                { id: 14, name: 'Neha Rane', phone: '9823456014', property: '2 BHK', location: 'Kharadi', budgetMin: 45, budgetMax: 55, source: 'Instagram', stage: 'visited', score: 73, notes: 'Young couple, first home', createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 15, name: 'Prakash Gaikwad', phone: '9823456015', property: '1 BHK', location: 'Hadapsar', budgetMin: 25, budgetMax: 35, source: 'MagicBricks', stage: 'contacted', score: 58, notes: 'Budget constrained', createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 16, name: 'Swati Kulkarni', phone: '9823456016', property: '3 BHK', location: 'Aundh', budgetMin: 90, budgetMax: 120, source: 'Walk-in', stage: 'booked', score: 95, notes: 'Agreement signed', createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 17, name: 'Mahesh Pawar', phone: '9823456017', property: 'Commercial', location: 'Koregaon Park', budgetMin: 100, budgetMax: 200, source: 'Referral', stage: 'negotiating', score: 82, notes: 'Shop for business', createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 18, name: 'Rekha Jadhav', phone: '9823456018', property: '2 BHK', location: 'Baner', budgetMin: 55, budgetMax: 65, source: 'Facebook', stage: 'new', score: 68, notes: 'Relocating from Mumbai', createdAt: new Date(Date.now() - 0.25 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 19, name: 'Vijay Shinde', phone: '9823456019', property: '4 BHK', location: 'Kothrud', budgetMin: 130, budgetMax: 180, source: 'Google', stage: 'lost', score: 40, notes: 'Changed mind', createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString() },
+                { id: 20, name: 'Anita Thakur', phone: '9823456020', property: '3 BHK', location: 'Viman Nagar', budgetMin: 85, budgetMax: 110, source: 'Referral', stage: 'visited', score: 79, notes: 'Airport proximity important', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+            ];
+
+            saveLeads(demoLeads);
+            localStorage.setItem('leadagent_initialized', 'true');
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            // Update button to open modal
+            initDemoData();
             document.querySelector('.btn-primary').onclick = openModal;
             renderLeads();
             updateStats();
