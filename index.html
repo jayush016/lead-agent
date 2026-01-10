@@ -827,6 +827,19 @@
         </div>
     </div>
 
+    <!-- Lead Detail Panel -->
+    <div class="panel-overlay" id="leadPanel" onclick="if(event.target===this) closePanel()">
+        <div class="panel">
+            <div class="panel-header">
+                <h2 id="panelTitle">Lead Details</h2>
+                <button class="modal-close" onclick="closePanel()">&times;</button>
+            </div>
+            <div class="panel-body" id="panelBody">
+                <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
     <style>
         /* Modal Styles */
         .modal-overlay {
@@ -937,6 +950,133 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Panel Styles */
+        .panel-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: 1000;
+        }
+
+        .panel-overlay.active {
+            display: block;
+        }
+
+        .panel {
+            position: fixed;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 420px;
+            max-width: 100%;
+            background: white;
+            box-shadow: -4px 0 20px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            animation: slideIn 0.2s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(100%);
+            }
+
+            to {
+                transform: translateX(0);
+            }
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg);
+        }
+
+        .panel-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .panel-body {
+            padding: 24px;
+            flex: 1;
+            overflow-y: auto;
+        }
+
+        .detail-section {
+            margin-bottom: 24px;
+        }
+
+        .detail-section h3 {
+            font-size: 12px;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            letter-spacing: 0.5px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .detail-value {
+            font-weight: 500;
+        }
+
+        .stage-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--accent);
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            background: #f0f9ff;
+            cursor: pointer;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .action-buttons .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-danger {
+            background: #fee2e2;
+            color: #dc2626;
+            border: 1px solid #fecaca;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+            color: white;
+        }
+
+        .notes-box {
+            background: var(--bg);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
     </style>
 
     <script>
@@ -974,6 +1114,93 @@
         function closeModal() {
             document.getElementById('addLeadModal').classList.remove('active');
             document.getElementById('addLeadForm').reset();
+        }
+
+        // ============ PANEL ============
+        let currentLeadId = null;
+        const stageLabels = {
+            'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
+            'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
+        };
+
+        function openPanel() {
+            document.getElementById('leadPanel').classList.add('active');
+        }
+
+        function closePanel() {
+            document.getElementById('leadPanel').classList.remove('active');
+            currentLeadId = null;
+        }
+
+        function viewLead(id) {
+            const leads = getLeads();
+            const lead = leads.find(l => l.id === id);
+            if (!lead) return;
+
+            currentLeadId = id;
+            document.getElementById('panelTitle').textContent = lead.name;
+
+            const createdDate = new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+            document.getElementById('panelBody').innerHTML = `
+                <div class="detail-section">
+                    <h3>Stage</h3>
+                    <select class="stage-select" onchange="changeStage(${id}, this.value)">
+                        ${Object.entries(stageLabels).map(([k, v]) =>
+                `<option value="${k}" ${lead.stage === k ? 'selected' : ''}>${v}</option>`
+            ).join('')}
+                    </select>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Contact</h3>
+                    <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">+91 ${lead.phone}</span></div>
+                    <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">${lead.source || '-'}</span></div>
+                    <div class="detail-row"><span class="detail-label">Added On</span><span class="detail-value">${createdDate}</span></div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Requirements</h3>
+                    <div class="detail-row"><span class="detail-label">Property</span><span class="detail-value">${lead.property}</span></div>
+                    <div class="detail-row"><span class="detail-label">Budget</span><span class="detail-value">${formatBudget(lead.budgetMin, lead.budgetMax)}</span></div>
+                    <div class="detail-row"><span class="detail-label">Location</span><span class="detail-value">${lead.location}</span></div>
+                    <div class="detail-row"><span class="detail-label">Score</span><span class="detail-value">${lead.score}</span></div>
+                </div>
+                
+                ${lead.notes ? `<div class="detail-section"><h3>Notes</h3><div class="notes-box">${lead.notes}</div></div>` : ''}
+                
+                <div class="detail-section">
+                    <h3>Quick Actions</h3>
+                    <div class="action-buttons">
+                        <a href="tel:${lead.phone}" class="btn btn-secondary"><i class="fas fa-phone"></i> Call</a>
+                        <a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                    </div>
+                    <div class="action-buttons">
+                        <button class="btn btn-danger" onclick="deleteLead(${id})"><i class="fas fa-trash"></i> Delete Lead</button>
+                    </div>
+                </div>
+            `;
+
+            openPanel();
+        }
+
+        function changeStage(id, newStage) {
+            const leads = getLeads();
+            const idx = leads.findIndex(l => l.id === id);
+            if (idx !== -1) {
+                leads[idx].stage = newStage;
+                saveLeads(leads);
+                renderLeads();
+            }
+        }
+
+        function deleteLead(id) {
+            if (!confirm('Delete this lead permanently?')) return;
+            const leads = getLeads().filter(l => l.id !== id);
+            saveLeads(leads);
+            closePanel();
+            renderLeads();
+            updateStats();
         }
 
         // ============ SAVE LEAD ============
@@ -1039,7 +1266,7 @@
                         <div class="action-btns">
                             <a href="tel:${lead.phone}" class="action-btn" title="Call"><i class="fas fa-phone"></i></a>
                             <a href="https://wa.me/91${lead.phone}" target="_blank" class="action-btn whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                            <button class="action-btn" title="View" onclick="alert('Lead details coming in Step 3!')"><i class="fas fa-eye"></i></button>
+                            <button class="action-btn" title="View" onclick="viewLead(${lead.id})"><i class="fas fa-eye"></i></button>
                         </div>
                     </td>
                 </tr>
