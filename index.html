@@ -740,6 +740,330 @@
             </div>
         </div>
     </main>
+
+    <!-- Add Lead Modal -->
+    <div class="modal-overlay" id="addLeadModal">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Add New Lead</h2>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <form id="addLeadForm" onsubmit="saveLead(event)">
+                <div class="modal-body">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Name *</label>
+                            <input type="text" name="name" required placeholder="Full name">
+                        </div>
+                        <div class="form-group">
+                            <label>Phone *</label>
+                            <input type="tel" name="phone" required placeholder="10-digit number" pattern="[0-9]{10}">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Property Type</label>
+                            <select name="property">
+                                <option value="">Select...</option>
+                                <option value="1 BHK">1 BHK</option>
+                                <option value="2 BHK">2 BHK</option>
+                                <option value="3 BHK">3 BHK</option>
+                                <option value="4 BHK">4 BHK</option>
+                                <option value="Villa">Villa</option>
+                                <option value="Plot">Plot</option>
+                                <option value="Commercial">Commercial</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Location</label>
+                            <select name="location">
+                                <option value="">Select...</option>
+                                <option value="Baner">Baner</option>
+                                <option value="Wakad">Wakad</option>
+                                <option value="Hinjewadi">Hinjewadi</option>
+                                <option value="Kothrud">Kothrud</option>
+                                <option value="Aundh">Aundh</option>
+                                <option value="Koregaon Park">Koregaon Park</option>
+                                <option value="Viman Nagar">Viman Nagar</option>
+                                <option value="Kharadi">Kharadi</option>
+                                <option value="Hadapsar">Hadapsar</option>
+                                <option value="Chinchwad">Chinchwad</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Budget Min (₹ Lakhs)</label>
+                            <input type="number" name="budgetMin" placeholder="e.g. 40">
+                        </div>
+                        <div class="form-group">
+                            <label>Budget Max (₹ Lakhs)</label>
+                            <input type="number" name="budgetMax" placeholder="e.g. 60">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Source</label>
+                        <select name="source">
+                            <option value="Walk-in">Walk-in</option>
+                            <option value="Referral">Referral</option>
+                            <option value="Facebook">Facebook</option>
+                            <option value="Instagram">Instagram</option>
+                            <option value="Google">Google</option>
+                            <option value="99acres">99acres</option>
+                            <option value="MagicBricks">MagicBricks</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Notes</label>
+                        <textarea name="notes" rows="2" placeholder="Any additional notes..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add Lead</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: white;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-footer {
+            padding: 16px 24px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        @media(max-width:640px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <script>
+        // ============ DATA LAYER ============
+        const STORAGE_KEY = 'leadagent_leads';
+
+        function getLeads() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        function saveLeads(leads) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+        }
+
+        function getInitials(name) {
+            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+        }
+
+        function formatBudget(min, max) {
+            if (!min && !max) return '-';
+            if (min >= 100) min = (min / 100).toFixed(1) + 'Cr';
+            else if (min) min = min + 'L';
+            if (max >= 100) max = (max / 100).toFixed(1) + 'Cr';
+            else if (max) max = max + 'L';
+            if (min && max) return `₹${min} - ${max}`;
+            if (max) return `Up to ₹${max}`;
+            return `₹${min}+`;
+        }
+
+        // ============ MODAL ============
+        function openModal() {
+            document.getElementById('addLeadModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('addLeadModal').classList.remove('active');
+            document.getElementById('addLeadForm').reset();
+        }
+
+        // ============ SAVE LEAD ============
+        function saveLead(e) {
+            e.preventDefault();
+            const form = e.target;
+            const lead = {
+                id: Date.now(),
+                name: form.name.value,
+                phone: form.phone.value,
+                property: form.property.value || '-',
+                location: form.location.value || '-',
+                budgetMin: parseInt(form.budgetMin.value) || 0,
+                budgetMax: parseInt(form.budgetMax.value) || 0,
+                source: form.source.value,
+                notes: form.notes.value,
+                stage: 'new',
+                score: Math.floor(Math.random() * 30) + 50,
+                createdAt: new Date().toISOString()
+            };
+
+            const leads = getLeads();
+            leads.unshift(lead);
+            saveLeads(leads);
+
+            closeModal();
+            renderLeads();
+            updateStats();
+        }
+
+        // ============ RENDER ============
+        function renderLeads() {
+            const tbody = document.querySelector('.table tbody');
+            const leads = getLeads();
+
+            if (leads.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary);">No leads yet. Click "Add New Lead" to get started!</td></tr>';
+                return;
+            }
+
+            const stageLabels = {
+                'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
+                'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
+            };
+
+            tbody.innerHTML = leads.map(lead => `
+                <tr>
+                    <td>
+                        <div class="lead-cell">
+                            <div class="lead-avatar">${getInitials(lead.name)}</div>
+                            <div>
+                                <div class="lead-name">${lead.name}</div>
+                                <div class="lead-phone">+91 ${lead.phone.slice(0, 5)} ${lead.phone.slice(5)}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td>${lead.property}</td>
+                    <td>${formatBudget(lead.budgetMin, lead.budgetMax)}</td>
+                    <td>${lead.location}</td>
+                    <td><span class="badge badge-${lead.stage}"><i class="fas fa-circle" style="font-size:6px"></i> ${stageLabels[lead.stage] || 'New Lead'}</span></td>
+                    <td><span class="score ${lead.score >= 70 ? 'hot' : 'warm'}">${lead.score}</span></td>
+                    <td>
+                        <div class="action-btns">
+                            <a href="tel:${lead.phone}" class="action-btn" title="Call"><i class="fas fa-phone"></i></a>
+                            <a href="https://wa.me/91${lead.phone}" target="_blank" class="action-btn whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                            <button class="action-btn" title="View" onclick="alert('Lead details coming in Step 3!')"><i class="fas fa-eye"></i></button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStats() {
+            const leads = getLeads();
+            document.querySelectorAll('.stat-value')[0].textContent = leads.length;
+            document.querySelectorAll('.stat-value')[1].textContent = leads.filter(l => {
+                const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                return new Date(l.createdAt).getTime() > weekAgo;
+            }).length;
+            document.querySelectorAll('.stat-value')[2].textContent = leads.filter(l => l.score >= 70).length;
+        }
+
+        // ============ INIT ============
+        document.addEventListener('DOMContentLoaded', () => {
+            // Update button to open modal
+            document.querySelector('.btn-primary').onclick = openModal;
+            renderLeads();
+            updateStats();
+        });
+    </script>
 </body>
 
 </html>
