@@ -1077,6 +1077,59 @@
             color: var(--text-secondary);
             line-height: 1.5;
         }
+
+        /* Timeline */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0;
+            border-left: 2px solid var(--border);
+            margin-left: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+
+        .timeline-item:last-child {
+            border-left-color: transparent;
+        }
+
+        .timeline-icon {
+            position: absolute;
+            left: -10px;
+            top: 12px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border: 2px solid var(--accent);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 8px;
+            color: var(--accent);
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.4;
+        }
+
+        .timeline-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
     </style>
 
     <script>
@@ -1104,6 +1157,32 @@
             if (min && max) return `₹${min} - ${max}`;
             if (max) return `Up to ₹${max}`;
             return `₹${min}+`;
+        }
+
+        function timeAgo(dateStr) {
+            const diff = Date.now() - new Date(dateStr).getTime();
+            const mins = Math.floor(diff / 60000);
+            if (mins < 1) return 'Just now';
+            if (mins < 60) return `${mins}m ago`;
+            const hrs = Math.floor(mins / 60);
+            if (hrs < 24) return `${hrs}h ago`;
+            const days = Math.floor(hrs / 24);
+            if (days < 7) return `${days}d ago`;
+            return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+        }
+
+        function logActivity(leadId, type, description) {
+            const leads = getLeads();
+            const idx = leads.findIndex(l => l.id === leadId);
+            if (idx === -1) return;
+
+            if (!leads[idx].activities) leads[idx].activities = [];
+            leads[idx].activities.unshift({
+                type: type,
+                description: description,
+                timestamp: new Date().toISOString()
+            });
+            saveLeads(leads);
         }
 
         // ============ MODAL ============
@@ -1142,6 +1221,28 @@
 
             const createdDate = new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
 
+            // Build activities array (include creation as first event)
+            const activities = lead.activities || [];
+            const allEvents = [
+                ...activities,
+                { type: 'created', description: `Lead created from ${lead.source || 'unknown source'}`, timestamp: lead.createdAt }
+            ];
+
+            const activityIcons = {
+                'stage_change': 'fa-arrow-right', 'call': 'fa-phone', 'whatsapp': 'fa-whatsapp',
+                'note': 'fa-sticky-note', 'meeting': 'fa-handshake', 'created': 'fa-plus-circle'
+            };
+
+            const timelineHtml = allEvents.length > 0 ? allEvents.map(a => `
+                <div class="timeline-item">
+                    <div class="timeline-icon"><i class="fas ${activityIcons[a.type] || 'fa-circle'}"></i></div>
+                    <div class="timeline-content">
+                        <div class="timeline-text">${a.description}</div>
+                        <div class="timeline-time">${timeAgo(a.timestamp)}</div>
+                    </div>
+                </div>
+            `).join('') : '<div style="color:var(--text-secondary);font-size:13px;">No activity yet</div>';
+
             document.getElementById('panelBody').innerHTML = `
                 <div class="detail-section">
                     <h3>Stage</h3>
@@ -1172,25 +1273,79 @@
                 <div class="detail-section">
                     <h3>Quick Actions</h3>
                     <div class="action-buttons">
-                        <a href="tel:${lead.phone}" class="btn btn-secondary"><i class="fas fa-phone"></i> Call</a>
-                        <a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-primary"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                        <a href="tel:${lead.phone}" class="btn btn-secondary" onclick="logInteraction(${id}, 'call', 'Made a phone call')"><i class="fas fa-phone"></i> Call</a>
+                        <a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-primary" onclick="logInteraction(${id}, 'whatsapp', 'Sent WhatsApp message')"><i class="fab fa-whatsapp"></i> WhatsApp</a>
                     </div>
-                    <div class="action-buttons">
-                        <button class="btn btn-danger" onclick="deleteLead(${id})"><i class="fas fa-trash"></i> Delete Lead</button>
+                    <div class="action-buttons" style="margin-top:8px;">
+                        <button class="btn btn-secondary" onclick="showLogForm(${id})"><i class="fas fa-plus"></i> Log Interaction</button>
                     </div>
+                </div>
+                
+                <div class="detail-section">
+                    <h3>Activity Timeline</h3>
+                    <div class="timeline">
+                        ${timelineHtml}
+                    </div>
+                </div>
+                
+                <div class="detail-section" style="margin-top:24px;">
+                    <button class="btn btn-danger" style="width:100%;" onclick="deleteLead(${id})"><i class="fas fa-trash"></i> Delete Lead</button>
                 </div>
             `;
 
             openPanel();
         }
 
+        function logInteraction(id, type, desc) {
+            const leads = getLeads();
+            const idx = leads.findIndex(l => l.id === id);
+            if (idx === -1) return;
+
+            if (!leads[idx].activities) leads[idx].activities = [];
+            leads[idx].activities.unshift({
+                type: type,
+                description: desc,
+                timestamp: new Date().toISOString()
+            });
+            saveLeads(leads);
+        }
+
+        function showLogForm(id) {
+            const desc = prompt('What did you do? (e.g., "Called - not reachable", "Site visit scheduled for tomorrow")');
+            if (!desc) return;
+
+            const leads = getLeads();
+            const idx = leads.findIndex(l => l.id === id);
+            if (idx === -1) return;
+
+            if (!leads[idx].activities) leads[idx].activities = [];
+            leads[idx].activities.unshift({
+                type: 'note',
+                description: desc,
+                timestamp: new Date().toISOString()
+            });
+            saveLeads(leads);
+            viewLead(id);
+        }
+
         function changeStage(id, newStage) {
             const leads = getLeads();
             const idx = leads.findIndex(l => l.id === id);
             if (idx !== -1) {
+                const oldStage = leads[idx].stage;
                 leads[idx].stage = newStage;
+
+                // Log activity
+                if (!leads[idx].activities) leads[idx].activities = [];
+                leads[idx].activities.unshift({
+                    type: 'stage_change',
+                    description: `Stage changed from ${stageLabels[oldStage] || 'New Lead'} to ${stageLabels[newStage]}`,
+                    timestamp: new Date().toISOString()
+                });
+
                 saveLeads(leads);
                 renderLeads();
+                viewLead(id); // Refresh panel
             }
         }
 
