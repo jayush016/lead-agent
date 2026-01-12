@@ -1706,7 +1706,7 @@
             document.getElementById('panelBody').innerHTML = `
                 <div class="detail-section">
                     <h3>Stage</h3>
-                    <select class="stage-select" onchange="changeStage(${id}, this.value)">
+                    <select class="stage-select" onchange="changeStage('${id}', this.value)">
                         ${Object.entries(stageLabels).map(([k, v]) =>
                 `<option value="${k}" ${lead.stage === k ? 'selected' : ''}>${v}</option>`
             ).join('')}
@@ -1751,7 +1751,7 @@
                 </div>
                 
                 <div class="detail-section" style="margin-top:24px;">
-                    <button class="btn btn-danger" style="width:100%;" onclick="deleteLead(${id})"><i class="fas fa-trash"></i> Delete Lead</button>
+                    <button class="btn btn-danger" style="width:100%;" onclick="deleteLead('${id}')"><i class="fas fa-trash"></i> Delete Lead</button>
                 </div>
             `;
 
@@ -1937,7 +1937,7 @@
                         <div class="action-btns">
                             <a href="tel:${lead.phone}" class="action-btn" title="Call"><i class="fas fa-phone"></i></a>
                             <a href="https://wa.me/91${lead.phone}" target="_blank" class="action-btn whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
-                            <button class="action-btn" title="View" onclick="viewLead(${lead.id})"><i class="fas fa-eye"></i></button>
+                            <button class="action-btn" title="View" onclick="viewLead('${lead.id}')"><i class="fas fa-eye"></i></button>
                         </div>
                     </td>
                 </tr>
