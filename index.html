@@ -1378,7 +1378,11 @@
         const SUPABASE_URL = 'https://vzjtedsejavynflitacw.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6anRlZHNlamF2eW5mbGl0YWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMzQ2MTQsImV4cCI6MjA4MzgxMDYxNH0.CqOVSgXNLjvFRRgZ0ow6RAH6bSYwnuUZ59VtFp-bmZw';
 
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // Check if Supabase loaded
+        if (!window.supabase) {
+            console.error('Supabase library not loaded!');
+        }
+        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
 
         // ============ DATA LAYER ============
         const STORAGE_KEY = 'leadagent_leads';
@@ -1740,7 +1744,7 @@
                         <button class="btn btn-secondary" onclick="scheduleFollowUp('${id}')"><i class="fas fa-clock"></i> Schedule Follow-up</button>
                         <button class="btn btn-secondary" onclick="showLogForm('${id}')"><i class="fas fa-plus"></i> Log Interaction</button>
                     </div>
-                    ${lead.followUpDate ? `<div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px;"><i class="fas fa-bell" style="color:var(--warning);margin-right:6px;"></i> Follow-up: ${lead.followUpDate} at ${lead.followUpTime || '10:00'}${lead.followUpNote ? ` - ${lead.followUpNote}` : ''}</div>` : ''}
+                    ${lead.followUpDate ? '<div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px;"><i class="fas fa-bell" style="color:var(--warning);margin-right:6px;"></i> Follow-up: ' + lead.followUpDate + ' at ' + (lead.followUpTime || '10:00') + (lead.followUpNote ? ' - ' + lead.followUpNote : '') + '</div>' : ''}
                 </div>
                 
                 <div class="detail-section">
