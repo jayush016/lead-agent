@@ -579,38 +579,12 @@
         <!-- Leads Table -->
         <div class="content">
             <div class="section-header">
-                <h2 class="section-title">All Leads</h2>
+                <h2 class="section-title">All Leads <span id="leadCount"
+                        style="font-size:14px;color:var(--text-secondary);font-weight:400;"></span></h2>
                 <div class="search-box">
-                    <input type="text" class="search-input" placeholder="Search leads...">
-                    <select class="filter-select" id="filterStage">
-                        <option value="">All Stages</option>
-                        <option value="new">New Lead</option>
-                        <option value="contacted">Contacted</option>
-                        <option value="scheduled">Visit Scheduled</option>
-                        <option value="visited">Visit Done</option>
-                        <option value="negotiating">Negotiating</option>
-                        <option value="booked">Booked</option>
-                        <option value="lost">Lost</option>
-                    </select>
-                    <select class="filter-select" id="filterLocation">
-                        <option value="">All Locations</option>
-                        <option value="Baner">Baner</option>
-                        <option value="Wakad">Wakad</option>
-                        <option value="Hinjewadi">Hinjewadi</option>
-                        <option value="Kothrud">Kothrud</option>
-                        <option value="Aundh">Aundh</option>
-                        <option value="Koregaon Park">Koregaon Park</option>
-                        <option value="Viman Nagar">Viman Nagar</option>
-                        <option value="Kharadi">Kharadi</option>
-                        <option value="Hadapsar">Hadapsar</option>
-                        <option value="Chinchwad">Chinchwad</option>
-                    </select>
-                    <select class="filter-select" id="filterScore">
-                        <option value="">All Scores</option>
-                        <option value="hot">Hot (70+)</option>
-                        <option value="warm">Warm (50-69)</option>
-                        <option value="cold">Cold (<50)< /option>
-                    </select>
+                    <input type="text" class="search-input" placeholder="Search by name, phone, location...">
+                    <button class="btn btn-secondary" onclick="openFilterPanel()"><i class="fas fa-filter"></i>
+                        Filters</button>
                 </div>
             </div>
 
@@ -856,6 +830,96 @@
             </div>
             <div class="panel-body" id="panelBody">
                 <!-- Filled by JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Panel -->
+    <div class="panel-overlay" id="filterPanel" onclick="if(event.target===this) closeFilterPanel()">
+        <div class="panel filter-panel">
+            <div class="panel-header">
+                <h2>Filters</h2>
+                <button class="modal-close" onclick="closeFilterPanel()">&times;</button>
+            </div>
+            <div class="panel-body">
+                <div class="filter-section">
+                    <label>Stage</label>
+                    <select id="filterStage">
+                        <option value="">All Stages</option>
+                        <option value="new">New Lead</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="scheduled">Visit Scheduled</option>
+                        <option value="visited">Visit Done</option>
+                        <option value="negotiating">Negotiating</option>
+                        <option value="booked">Booked</option>
+                        <option value="lost">Lost</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label>Location</label>
+                    <select id="filterLocation">
+                        <option value="">All Locations</option>
+                        <option value="Baner">Baner</option>
+                        <option value="Wakad">Wakad</option>
+                        <option value="Hinjewadi">Hinjewadi</option>
+                        <option value="Kothrud">Kothrud</option>
+                        <option value="Aundh">Aundh</option>
+                        <option value="Koregaon Park">Koregaon Park</option>
+                        <option value="Viman Nagar">Viman Nagar</option>
+                        <option value="Kharadi">Kharadi</option>
+                        <option value="Hadapsar">Hadapsar</option>
+                        <option value="Chinchwad">Chinchwad</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label>Property Type</label>
+                    <select id="filterProperty">
+                        <option value="">All Types</option>
+                        <option value="1 BHK">1 BHK</option>
+                        <option value="2 BHK">2 BHK</option>
+                        <option value="3 BHK">3 BHK</option>
+                        <option value="4 BHK">4 BHK</option>
+                        <option value="Villa">Villa</option>
+                        <option value="Plot">Plot</option>
+                        <option value="Commercial">Commercial</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label>Budget Range (₹ Lakhs)</label>
+                    <div class="budget-range">
+                        <input type="number" id="filterBudgetMin" placeholder="Min" min="0">
+                        <span>to</span>
+                        <input type="number" id="filterBudgetMax" placeholder="Max" min="0">
+                    </div>
+                </div>
+                <div class="filter-section">
+                    <label>Lead Score</label>
+                    <select id="filterScore">
+                        <option value="">All Scores</option>
+                        <option value="hot">Hot (70+)</option>
+                        <option value="warm">Warm (50-69)</option>
+                        <option value="cold">Cold (&lt;50)</option>
+                    </select>
+                </div>
+                <div class="filter-section">
+                    <label>Source</label>
+                    <select id="filterSource">
+                        <option value="">All Sources</option>
+                        <option value="Walk-in">Walk-in</option>
+                        <option value="Referral">Referral</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Google">Google</option>
+                        <option value="99acres">99acres</option>
+                        <option value="MagicBricks">MagicBricks</option>
+                    </select>
+                </div>
+                <div class="filter-actions">
+                    <button class="btn btn-secondary" onclick="clearFilters()"><i class="fas fa-times"></i> Clear
+                        All</button>
+                    <button class="btn btn-primary" onclick="applyFilters()"><i class="fas fa-check"></i> Apply
+                        Filters</button>
+                </div>
             </div>
         </div>
     </div>
@@ -1150,6 +1214,95 @@
             color: var(--text-secondary);
             margin-top: 4px;
         }
+
+        /* Filter Panel */
+        .filter-panel {
+            width: 340px;
+        }
+
+        .filter-section {
+            margin-bottom: 20px;
+        }
+
+        .filter-section label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-section select,
+        .filter-section input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .filter-section select:focus,
+        .filter-section input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .budget-range {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .budget-range input {
+            flex: 1;
+        }
+
+        .budget-range span {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .filter-actions {
+            display: flex;
+            gap: 12px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            margin-top: 8px;
+        }
+
+        .filter-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .active-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+
+        .filter-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            background: #e0f2fe;
+            color: #0369a1;
+            border-radius: 16px;
+            font-size: 12px;
+        }
+
+        .filter-tag button {
+            background: none;
+            border: none;
+            color: inherit;
+            cursor: pointer;
+            font-size: 14px;
+        }
     </style>
 
     <script>
@@ -1229,6 +1382,31 @@
         function closePanel() {
             document.getElementById('leadPanel').classList.remove('active');
             currentLeadId = null;
+        }
+
+        // ============ FILTER PANEL ============
+        function openFilterPanel() {
+            document.getElementById('filterPanel').classList.add('active');
+        }
+
+        function closeFilterPanel() {
+            document.getElementById('filterPanel').classList.remove('active');
+        }
+
+        function applyFilters() {
+            closeFilterPanel();
+            renderLeads();
+        }
+
+        function clearFilters() {
+            document.getElementById('filterStage').value = '';
+            document.getElementById('filterLocation').value = '';
+            document.getElementById('filterProperty').value = '';
+            document.getElementById('filterBudgetMin').value = '';
+            document.getElementById('filterBudgetMax').value = '';
+            document.getElementById('filterScore').value = '';
+            document.getElementById('filterSource').value = '';
+            renderLeads();
         }
 
         function viewLead(id) {
@@ -1414,7 +1592,11 @@
             // Get filter values
             const filterStage = document.getElementById('filterStage')?.value || '';
             const filterLocation = document.getElementById('filterLocation')?.value || '';
+            const filterProperty = document.getElementById('filterProperty')?.value || '';
+            const filterBudgetMin = parseInt(document.getElementById('filterBudgetMin')?.value) || 0;
+            const filterBudgetMax = parseInt(document.getElementById('filterBudgetMax')?.value) || 0;
             const filterScore = document.getElementById('filterScore')?.value || '';
+            const filterSource = document.getElementById('filterSource')?.value || '';
             const searchTerm = document.querySelector('.search-input')?.value?.toLowerCase() || '';
 
             // Filter leads
@@ -1425,12 +1607,24 @@
             if (filterLocation) {
                 leads = leads.filter(l => l.location === filterLocation);
             }
+            if (filterProperty) {
+                leads = leads.filter(l => l.property === filterProperty);
+            }
+            if (filterBudgetMin > 0) {
+                leads = leads.filter(l => l.budgetMax >= filterBudgetMin);
+            }
+            if (filterBudgetMax > 0) {
+                leads = leads.filter(l => l.budgetMin <= filterBudgetMax);
+            }
             if (filterScore === 'hot') {
                 leads = leads.filter(l => l.score >= 70);
             } else if (filterScore === 'warm') {
                 leads = leads.filter(l => l.score >= 50 && l.score < 70);
             } else if (filterScore === 'cold') {
                 leads = leads.filter(l => l.score < 50);
+            }
+            if (filterSource) {
+                leads = leads.filter(l => l.source === filterSource);
             }
             if (searchTerm) {
                 leads = leads.filter(l =>
@@ -1537,10 +1731,7 @@
             initDemoData();
             document.querySelector('.btn-primary').onclick = openModal;
 
-            // Filter and Search listeners
-            document.getElementById('filterStage').addEventListener('change', renderLeads);
-            document.getElementById('filterLocation').addEventListener('change', renderLeads);
-            document.getElementById('filterScore').addEventListener('change', renderLeads);
+            // Search listener (filters use Apply button)
             document.querySelector('.search-input').addEventListener('input', renderLeads);
 
             renderLeads();
