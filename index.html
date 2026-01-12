@@ -1384,10 +1384,12 @@
             console.error('Supabase library not loaded!');
         }
         const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+        console.log('✅ Supabase initialized:', !!supabase);
 
         // ============ DATA LAYER ============
         const STORAGE_KEY = 'leadagent_leads';
         let leadsCache = []; // In-memory cache for faster access
+        console.log('✅ Data layer vars defined');
 
         // Load leads from Supabase (with localStorage fallback)
         async function loadLeads() {
