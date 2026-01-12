@@ -1374,7 +1374,7 @@
     </style>
 
     <script>
-        console.log('🚀 Script starting...');
+
         // ============ SUPABASE CONFIG ============
         const SUPABASE_URL = 'https://vzjtedsejavynflitacw.supabase.co';
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6anRlZHNlamF2eW5mbGl0YWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMzQ2MTQsImV4cCI6MjA4MzgxMDYxNH0.CqOVSgXNLjvFRRgZ0ow6RAH6bSYwnuUZ59VtFp-bmZw';
@@ -1384,12 +1384,12 @@
             console.error('Supabase library not loaded!');
         }
         const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-        console.log('✅ Supabase initialized:', !!supabase);
+
 
         // ============ DATA LAYER ============
         const STORAGE_KEY = 'leadagent_leads';
         let leadsCache = []; // In-memory cache for faster access
-        console.log('✅ Data layer vars defined');
+
 
         // Load leads from Supabase (with localStorage fallback)
         async function loadLeads() {
@@ -2008,11 +2008,11 @@
         window.closeFilterPanel = closeFilterPanel;
         window.applyFilters = applyFilters;
         window.clearFilters = clearFilters;
-        console.log('✅ Functions attached to window');
+
 
         // Initialize app - run immediately if DOM ready, otherwise wait
         async function initApp() {
-            console.log('🎯 Initializing app...');
+
             document.querySelector('.btn-primary').onclick = openModal;
 
             // Search listener (filters use Apply button)
@@ -2033,7 +2033,7 @@
             renderLeads();
             renderFollowups();
             updateStats();
-            console.log('✅ App initialization complete');
+
         }
 
         // Run init immediately if DOM ready, otherwise wait for DOMContentLoaded
