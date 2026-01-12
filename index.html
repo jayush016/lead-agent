@@ -7,6 +7,7 @@
     <title>Lead Agent - Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             --primary: #0f172a;
@@ -1306,15 +1307,145 @@
     </style>
 
     <script>
+        // ============ SUPABASE CONFIG ============
+        const SUPABASE_URL = 'https://vzjtedsejavynflitacw.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6anRlZHNlamF2eW5mbGl0YWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMzQ2MTQsImV4cCI6MjA4MzgxMDYxNH0.CqOVSgXNLjvFRRgZ0ow6RAH6bSYwnuUZ59VtFp-bmZw';
+
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
         // ============ DATA LAYER ============
         const STORAGE_KEY = 'leadagent_leads';
+        let leadsCache = []; // In-memory cache for faster access
 
-        function getLeads() {
-            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        // Load leads from Supabase (with localStorage fallback)
+        async function loadLeads() {
+            try {
+                const { data, error } = await supabase
+                    .from('leads')
+                    .select('*, activities(*)')
+                    .order('created_at', { ascending: false });
+
+                if (error) throw error;
+
+                // Transform data to match our frontend structure
+                leadsCache = data.map(lead => ({
+                    id: lead.id,
+                    name: lead.name,
+                    phone: lead.phone,
+                    property: lead.property || '-',
+                    location: lead.location || '-',
+                    budgetMin: lead.budget_min || 0,
+                    budgetMax: lead.budget_max || 0,
+                    source: lead.source,
+                    stage: lead.stage || 'new',
+                    score: lead.score || 50,
+                    notes: lead.notes,
+                    createdAt: lead.created_at,
+                    activities: (lead.activities || []).map(a => ({
+                        type: a.type,
+                        description: a.description,
+                        timestamp: a.created_at
+                    }))
+                }));
+
+                console.log('✅ Loaded from Supabase:', leadsCache.length, 'leads');
+                return leadsCache;
+            } catch (err) {
+                console.warn('⚠️ Supabase unavailable, using localStorage:', err.message);
+                leadsCache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                return leadsCache;
+            }
         }
 
+        function getLeads() {
+            return leadsCache;
+        }
+
+        async function saveLeadToDb(lead) {
+            try {
+                const dbLead = {
+                    name: lead.name,
+                    phone: lead.phone,
+                    property: lead.property,
+                    location: lead.location,
+                    budget_min: lead.budgetMin,
+                    budget_max: lead.budgetMax,
+                    source: lead.source,
+                    stage: lead.stage,
+                    score: lead.score,
+                    notes: lead.notes
+                };
+
+                const { data, error } = await supabase
+                    .from('leads')
+                    .insert([dbLead])
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                console.log('✅ Saved to Supabase:', data.id);
+                return data;
+            } catch (err) {
+                console.warn('⚠️ Supabase save failed, using localStorage:', err.message);
+                // Fallback to localStorage
+                const leads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                lead.id = Date.now();
+                leads.unshift(lead);
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+                return lead;
+            }
+        }
+
+        async function updateLeadInDb(id, updates) {
+            try {
+                const dbUpdates = {};
+                if (updates.stage) dbUpdates.stage = updates.stage;
+                if (updates.score !== undefined) dbUpdates.score = updates.score;
+                if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+                dbUpdates.updated_at = new Date().toISOString();
+
+                const { error } = await supabase
+                    .from('leads')
+                    .update(dbUpdates)
+                    .eq('id', id);
+
+                if (error) throw error;
+                console.log('✅ Updated in Supabase:', id);
+            } catch (err) {
+                console.warn('⚠️ Supabase update failed:', err.message);
+            }
+        }
+
+        async function addActivityToDb(leadId, type, description) {
+            try {
+                const { error } = await supabase
+                    .from('activities')
+                    .insert([{ lead_id: leadId, type, description }]);
+
+                if (error) throw error;
+            } catch (err) {
+                console.warn('⚠️ Activity save failed:', err.message);
+            }
+        }
+
+        async function deleteLeadFromDb(id) {
+            try {
+                const { error } = await supabase
+                    .from('leads')
+                    .delete()
+                    .eq('id', id);
+
+                if (error) throw error;
+                console.log('✅ Deleted from Supabase:', id);
+            } catch (err) {
+                console.warn('⚠️ Supabase delete failed:', err.message);
+            }
+        }
+
+        // Legacy function for compatibility
         function saveLeads(leads) {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+            leadsCache = leads;
         }
 
         function getInitials(name) {
@@ -1526,42 +1657,38 @@
             viewLead(id);
         }
 
-        function changeStage(id, newStage) {
+        async function changeStage(id, newStage) {
             const leads = getLeads();
-            const idx = leads.findIndex(l => l.id === id);
-            if (idx !== -1) {
-                const oldStage = leads[idx].stage;
-                leads[idx].stage = newStage;
+            const lead = leads.find(l => l.id === id);
+            if (!lead) return;
 
-                // Log activity
-                if (!leads[idx].activities) leads[idx].activities = [];
-                leads[idx].activities.unshift({
-                    type: 'stage_change',
-                    description: `Stage changed from ${stageLabels[oldStage] || 'New Lead'} to ${stageLabels[newStage]}`,
-                    timestamp: new Date().toISOString()
-                });
+            const oldStage = lead.stage;
+            const description = `Stage changed from ${stageLabels[oldStage] || 'New Lead'} to ${stageLabels[newStage]}`;
 
-                saveLeads(leads);
-                renderLeads();
-                viewLead(id); // Refresh panel
-            }
+            // Update in database
+            await updateLeadInDb(id, { stage: newStage });
+            await addActivityToDb(id, 'stage_change', description);
+
+            // Reload and refresh UI
+            await loadLeads();
+            renderLeads();
+            viewLead(id);
         }
 
-        function deleteLead(id) {
+        async function deleteLead(id) {
             if (!confirm('Delete this lead permanently?')) return;
-            const leads = getLeads().filter(l => l.id !== id);
-            saveLeads(leads);
+            await deleteLeadFromDb(id);
+            await loadLeads();
             closePanel();
             renderLeads();
             updateStats();
         }
 
         // ============ SAVE LEAD ============
-        function saveLead(e) {
+        async function saveLead(e) {
             e.preventDefault();
             const form = e.target;
             const lead = {
-                id: Date.now(),
                 name: form.name.value,
                 phone: form.phone.value,
                 property: form.property.value || '-',
@@ -1575,10 +1702,8 @@
                 createdAt: new Date().toISOString()
             };
 
-            const leads = getLeads();
-            leads.unshift(lead);
-            saveLeads(leads);
-
+            await saveLeadToDb(lead);
+            await loadLeads();
             closeModal();
             renderLeads();
             updateStats();
@@ -1727,12 +1852,23 @@
             localStorage.setItem('leadagent_initialized', 'true');
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            initDemoData();
+        document.addEventListener('DOMContentLoaded', async () => {
             document.querySelector('.btn-primary').onclick = openModal;
 
             // Search listener (filters use Apply button)
             document.querySelector('.search-input').addEventListener('input', renderLeads);
+
+            // Load leads from database (or localStorage if DB unavailable)
+            const tbody = document.querySelector('.table tbody');
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading leads...</td></tr>';
+
+            await loadLeads();
+
+            // If no leads, initialize with demo data (for first-time users)
+            if (leadsCache.length === 0) {
+                initDemoData();
+                await loadLeads();
+            }
 
             renderLeads();
             updateStats();
