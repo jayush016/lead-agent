@@ -582,7 +582,7 @@
                 <h2 class="section-title">All Leads</h2>
                 <div class="search-box">
                     <input type="text" class="search-input" placeholder="Search leads...">
-                    <select class="filter-select">
+                    <select class="filter-select" id="filterStage">
                         <option value="">All Stages</option>
                         <option value="new">New Lead</option>
                         <option value="contacted">Contacted</option>
@@ -591,6 +591,25 @@
                         <option value="negotiating">Negotiating</option>
                         <option value="booked">Booked</option>
                         <option value="lost">Lost</option>
+                    </select>
+                    <select class="filter-select" id="filterLocation">
+                        <option value="">All Locations</option>
+                        <option value="Baner">Baner</option>
+                        <option value="Wakad">Wakad</option>
+                        <option value="Hinjewadi">Hinjewadi</option>
+                        <option value="Kothrud">Kothrud</option>
+                        <option value="Aundh">Aundh</option>
+                        <option value="Koregaon Park">Koregaon Park</option>
+                        <option value="Viman Nagar">Viman Nagar</option>
+                        <option value="Kharadi">Kharadi</option>
+                        <option value="Hadapsar">Hadapsar</option>
+                        <option value="Chinchwad">Chinchwad</option>
+                    </select>
+                    <select class="filter-select" id="filterScore">
+                        <option value="">All Scores</option>
+                        <option value="hot">Hot (70+)</option>
+                        <option value="warm">Warm (50-69)</option>
+                        <option value="cold">Cold (<50)< /option>
                     </select>
                 </div>
             </div>
@@ -603,7 +622,8 @@
                             <th>Property</th>
                             <th>Budget</th>
                             <th>Location</th>
-                            <th>Status</th>
+                            <th>Stage</th>
+                            <th>Remarks</th>
                             <th>Score</th>
                             <th>Actions</th>
                         </tr>
@@ -1392,13 +1412,25 @@
             const allLeads = getLeads();
 
             // Get filter values
-            const filterStage = document.querySelector('.filter-select')?.value || '';
+            const filterStage = document.getElementById('filterStage')?.value || '';
+            const filterLocation = document.getElementById('filterLocation')?.value || '';
+            const filterScore = document.getElementById('filterScore')?.value || '';
             const searchTerm = document.querySelector('.search-input')?.value?.toLowerCase() || '';
 
             // Filter leads
             let leads = allLeads;
             if (filterStage) {
                 leads = leads.filter(l => l.stage === filterStage);
+            }
+            if (filterLocation) {
+                leads = leads.filter(l => l.location === filterLocation);
+            }
+            if (filterScore === 'hot') {
+                leads = leads.filter(l => l.score >= 70);
+            } else if (filterScore === 'warm') {
+                leads = leads.filter(l => l.score >= 50 && l.score < 70);
+            } else if (filterScore === 'cold') {
+                leads = leads.filter(l => l.score < 50);
             }
             if (searchTerm) {
                 leads = leads.filter(l =>
@@ -1412,7 +1444,7 @@
                 const msg = allLeads.length === 0
                     ? 'No leads yet. Click "Add New Lead" to get started!'
                     : 'No leads match your filters.';
-                tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-secondary);">${msg}</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary);">${msg}</td></tr>`;
                 return;
             }
 
@@ -1420,6 +1452,17 @@
                 'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
                 'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
             };
+
+            function getRemarks(lead) {
+                // Show recent activity or notes as quick status
+                const latest = lead.activities && lead.activities[0];
+                if (lead.stage === 'booked') return '🎉 Token received';
+                if (lead.stage === 'scheduled' && latest) return latest.description.slice(0, 20) + '...';
+                if (lead.stage === 'lost') return '❌ Lost';
+                if (latest) return latest.description.length > 20 ? latest.description.slice(0, 18) + '...' : latest.description;
+                if (lead.notes) return lead.notes.length > 20 ? lead.notes.slice(0, 18) + '...' : lead.notes;
+                return '-';
+            }
 
             tbody.innerHTML = leads.map(lead => `
                 <tr>
@@ -1436,6 +1479,7 @@
                     <td>${formatBudget(lead.budgetMin, lead.budgetMax)}</td>
                     <td>${lead.location}</td>
                     <td><span class="badge badge-${lead.stage}"><i class="fas fa-circle" style="font-size:6px"></i> ${stageLabels[lead.stage] || 'New Lead'}</span></td>
+                    <td style="font-size:12px;color:var(--text-secondary);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${getRemarks(lead)}</td>
                     <td><span class="score ${lead.score >= 70 ? 'hot' : 'warm'}">${lead.score}</span></td>
                     <td>
                         <div class="action-btns">
@@ -1494,7 +1538,9 @@
             document.querySelector('.btn-primary').onclick = openModal;
 
             // Filter and Search listeners
-            document.querySelector('.filter-select').addEventListener('change', renderLeads);
+            document.getElementById('filterStage').addEventListener('change', renderLeads);
+            document.getElementById('filterLocation').addEventListener('change', renderLeads);
+            document.getElementById('filterScore').addEventListener('change', renderLeads);
             document.querySelector('.search-input').addEventListener('input', renderLeads);
 
             renderLeads();
