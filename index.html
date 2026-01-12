@@ -1992,6 +1992,24 @@
             localStorage.setItem('leadagent_initialized', 'true');
         }
 
+        // Expose functions to global scope for onclick handlers
+        window.viewLead = viewLead;
+        window.changeStage = changeStage;
+        window.deleteLead = deleteLead;
+        window.scheduleFollowUp = scheduleFollowUp;
+        window.logInteraction = logInteraction;
+        window.showLogForm = showLogForm;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.openPanel = openPanel;
+        window.closePanel = closePanel;
+        window.saveLead = saveLead;
+        window.openFilterPanel = openFilterPanel;
+        window.closeFilterPanel = closeFilterPanel;
+        window.applyFilters = applyFilters;
+        window.clearFilters = clearFilters;
+        console.log('✅ Functions attached to window');
+
         document.addEventListener('DOMContentLoaded', async () => {
             document.querySelector('.btn-primary').onclick = openModal;
 
