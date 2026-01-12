@@ -2010,7 +2010,9 @@
         window.clearFilters = clearFilters;
         console.log('✅ Functions attached to window');
 
-        document.addEventListener('DOMContentLoaded', async () => {
+        // Initialize app - run immediately if DOM ready, otherwise wait
+        async function initApp() {
+            console.log('🎯 Initializing app...');
             document.querySelector('.btn-primary').onclick = openModal;
 
             // Search listener (filters use Apply button)
@@ -2031,7 +2033,15 @@
             renderLeads();
             renderFollowups();
             updateStats();
-        });
+            console.log('✅ App initialization complete');
+        }
+
+        // Run init immediately if DOM ready, otherwise wait for DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initApp);
+        } else {
+            initApp();
+        }
     </script>
 </body>
 
