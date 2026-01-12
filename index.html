@@ -572,8 +572,19 @@
                         <i class="fas fa-phone-alt"></i>
                     </div>
                 </div>
-                <div class="stat-value">2</div>
+                <div class="stat-value" id="followupCount">0</div>
                 <div class="stat-label">Follow-ups Today</div>
+            </div>
+        </div>
+
+        <!-- Today's Follow-ups Section -->
+        <div class="content" id="followupsSection" style="display:none;">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-bell" style="color:var(--warning);margin-right:8px;"></i>
+                    Today's Follow-ups</h2>
+            </div>
+            <div class="followup-list" id="followupList">
+                <!-- Filled by JS -->
             </div>
         </div>
 
@@ -1304,6 +1315,62 @@
             cursor: pointer;
             font-size: 14px;
         }
+
+        /* Follow-up List */
+        .followup-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .followup-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .followup-card:hover {
+            border-color: var(--accent);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .followup-card .lead-avatar {
+            flex-shrink: 0;
+        }
+
+        .followup-info {
+            flex: 1;
+        }
+
+        .followup-name {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .followup-detail {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-top: 2px;
+        }
+
+        .followup-time {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--warning);
+            background: #fef3c7;
+            padding: 4px 10px;
+            border-radius: 12px;
+        }
+
+        .followup-actions {
+            display: flex;
+            gap: 8px;
+        }
     </style>
 
     <script>
@@ -1341,6 +1408,9 @@
                     score: lead.score || 50,
                     notes: lead.notes,
                     createdAt: lead.created_at,
+                    followUpDate: lead.follow_up_date,
+                    followUpTime: lead.follow_up_time,
+                    followUpNote: lead.follow_up_note,
                     activities: (lead.activities || []).map(a => ({
                         type: a.type,
                         description: a.description,
@@ -1402,6 +1472,9 @@
                 if (updates.stage) dbUpdates.stage = updates.stage;
                 if (updates.score !== undefined) dbUpdates.score = updates.score;
                 if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+                if (updates.followUpDate !== undefined) dbUpdates.follow_up_date = updates.followUpDate;
+                if (updates.followUpTime !== undefined) dbUpdates.follow_up_time = updates.followUpTime;
+                if (updates.followUpNote !== undefined) dbUpdates.follow_up_note = updates.followUpNote;
                 dbUpdates.updated_at = new Date().toISOString();
 
                 const { error } = await supabase
@@ -1414,6 +1487,63 @@
             } catch (err) {
                 console.warn('⚠️ Supabase update failed:', err.message);
             }
+        }
+
+        async function scheduleFollowUp(id) {
+            const lead = getLeads().find(l => l.id === id);
+            if (!lead) return;
+
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = prompt('Follow-up Date (YYYY-MM-DD):', lead.followUpDate || today);
+            if (!dateInput) return;
+
+            const timeInput = prompt('Follow-up Time (HH:MM):', lead.followUpTime || '10:00');
+            if (!timeInput) return;
+
+            const noteInput = prompt('Follow-up Note (optional):', lead.followUpNote || 'Follow-up call');
+
+            await updateLeadInDb(id, {
+                followUpDate: dateInput,
+                followUpTime: timeInput,
+                followUpNote: noteInput || ''
+            });
+
+            await addActivityToDb(id, 'followup', `Follow-up scheduled for ${dateInput} at ${timeInput}`);
+            await loadLeads();
+            renderFollowups();
+            viewLead(id);
+        }
+
+        function renderFollowups() {
+            const today = new Date().toISOString().split('T')[0];
+            const followups = getLeads().filter(l => l.followUpDate === today);
+
+            const section = document.getElementById('followupsSection');
+            const list = document.getElementById('followupList');
+            const countEl = document.getElementById('followupCount');
+
+            countEl.textContent = followups.length;
+
+            if (followups.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            list.innerHTML = followups.map(lead => `
+                <div class="followup-card" onclick="viewLead('${lead.id}')">
+                    <div class="lead-avatar">${getInitials(lead.name)}</div>
+                    <div class="followup-info">
+                        <div class="followup-name">${lead.name}</div>
+                        <div class="followup-detail">${lead.followUpNote || 'Follow-up call'} • ${lead.phone}</div>
+                    </div>
+                    <div class="followup-time">${lead.followUpTime || '10:00'}</div>
+                    <div class="followup-actions">
+                        <a href="tel:${lead.phone}" class="action-btn" title="Call" onclick="event.stopPropagation();"><i class="fas fa-phone"></i></a>
+                        <a href="https://wa.me/91${lead.phone}" target="_blank" class="action-btn whatsapp" title="WhatsApp" onclick="event.stopPropagation();"><i class="fab fa-whatsapp"></i></a>
+                    </div>
+                </div>
+            `).join('');
         }
 
         async function addActivityToDb(leadId, type, description) {
@@ -1559,7 +1689,8 @@
 
             const activityIcons = {
                 'stage_change': 'fa-arrow-right', 'call': 'fa-phone', 'whatsapp': 'fa-whatsapp',
-                'note': 'fa-sticky-note', 'meeting': 'fa-handshake', 'created': 'fa-plus-circle'
+                'note': 'fa-sticky-note', 'meeting': 'fa-handshake', 'created': 'fa-plus-circle',
+                'followup': 'fa-clock'
             };
 
             const timelineHtml = allEvents.length > 0 ? allEvents.map(a => `
@@ -1602,12 +1733,14 @@
                 <div class="detail-section">
                     <h3>Quick Actions</h3>
                     <div class="action-buttons">
-                        <a href="tel:${lead.phone}" class="btn btn-secondary" onclick="logInteraction(${id}, 'call', 'Made a phone call')"><i class="fas fa-phone"></i> Call</a>
-                        <a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-primary" onclick="logInteraction(${id}, 'whatsapp', 'Sent WhatsApp message')"><i class="fab fa-whatsapp"></i> WhatsApp</a>
+                        <a href="tel:${lead.phone}" class="btn btn-secondary" onclick="logInteraction('${id}', 'call', 'Made a phone call')"><i class="fas fa-phone"></i> Call</a>
+                        <a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-primary" onclick="logInteraction('${id}', 'whatsapp', 'Sent WhatsApp message')"><i class="fab fa-whatsapp"></i> WhatsApp</a>
                     </div>
                     <div class="action-buttons" style="margin-top:8px;">
-                        <button class="btn btn-secondary" onclick="showLogForm(${id})"><i class="fas fa-plus"></i> Log Interaction</button>
+                        <button class="btn btn-secondary" onclick="scheduleFollowUp('${id}')"><i class="fas fa-clock"></i> Schedule Follow-up</button>
+                        <button class="btn btn-secondary" onclick="showLogForm('${id}')"><i class="fas fa-plus"></i> Log Interaction</button>
                     </div>
+                    ${lead.followUpDate ? `<div style="margin-top:12px;padding:10px;background:#fef3c7;border-radius:8px;font-size:13px;"><i class="fas fa-bell" style="color:var(--warning);margin-right:6px;"></i> Follow-up: ${lead.followUpDate} at ${lead.followUpTime || '10:00'}${lead.followUpNote ? ` - ${lead.followUpNote}` : ''}</div>` : ''}
                 </div>
                 
                 <div class="detail-section">
@@ -1871,6 +2004,7 @@
             }
 
             renderLeads();
+            renderFollowups();
             updateStats();
         });
     </script>
