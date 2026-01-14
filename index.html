@@ -8,6 +8,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #0f172a;
@@ -514,7 +515,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" onclick="alert('Analytics page coming soon!')">
+                <a href="#" class="nav-link" id="navAnalytics" onclick="showPage('analytics')">
                     <i class="fas fa-chart-bar"></i>
                     Analytics
                 </a>
@@ -1009,6 +1010,77 @@
                 </div>
             </div>
         </div> <!-- End Follow-ups Page -->
+
+        <!-- Analytics Page -->
+        <div id="analyticsPage" style="display:none;">
+            <div class="content">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-chart-bar" style="margin-right:8px;"></i> Analytics</h2>
+                    <button class="btn btn-secondary" onclick="renderAnalyticsPage()"><i class="fas fa-sync-alt"></i>
+                        Refresh</button>
+                </div>
+
+                <!-- KPI Cards -->
+                <div class="stats-grid" style="padding:0;margin-bottom:24px;">
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon blue"><i class="fas fa-users"></i></div>
+                        </div>
+                        <div class="stat-value" id="analyticsTotalLeads">0</div>
+                        <div class="stat-label">Total Leads</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon green"><i class="fas fa-check-circle"></i></div>
+                        </div>
+                        <div class="stat-value" id="analyticsBookedLeads">0</div>
+                        <div class="stat-label">Booked Deals</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon orange"><i class="fas fa-percentage"></i></div>
+                        </div>
+                        <div class="stat-value" id="analyticsConversionRate">0%</div>
+                        <div class="stat-label">Conversion Rate</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-icon purple"><i class="fas fa-fire"></i></div>
+                        </div>
+                        <div class="stat-value" id="analyticsAvgScore">0</div>
+                        <div class="stat-label">Avg Lead Score</div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 1 -->
+                <div style="display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;">
+                    <div
+                        style="flex:1;min-width:300px;background:white;padding:24px;border-radius:12px;box-shadow:var(--shadow);">
+                        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">Pipeline Funnel</h3>
+                        <div style="height:300px;">
+                            <canvas id="pipelineChart"></canvas>
+                        </div>
+                    </div>
+                    <div
+                        style="flex:1;min-width:300px;background:white;padding:24px;border-radius:12px;box-shadow:var(--shadow);">
+                        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">Lead Sources</h3>
+                        <div style="height:300px;">
+                            <canvas id="sourceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts Row 2 -->
+                <div
+                    style="background:white;padding:24px;border-radius:12px;box-shadow:var(--shadow);margin-bottom:24px;">
+                    <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">Leads Growth Trend (Last 6 Months)
+                    </h3>
+                    <div style="height:300px;">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div> <!-- End Analytics Page -->
 
     </main>
 
@@ -2573,14 +2645,16 @@
                 document.getElementById('dashboardPage').style.display = page === 'dashboard' ? 'block' : 'none';
                 document.getElementById('allLeadsPage').style.display = page === 'allLeads' ? 'block' : 'none';
                 document.getElementById('followupsPage').style.display = page === 'followups' ? 'block' : 'none';
+                document.getElementById('analyticsPage').style.display = page === 'analytics' ? 'block' : 'none';
 
                 // Update nav active state
                 document.getElementById('navDashboard').classList.toggle('active', page === 'dashboard');
                 document.getElementById('navAllLeads').classList.toggle('active', page === 'allLeads');
                 document.getElementById('navFollowups').classList.toggle('active', page === 'followups');
+                document.getElementById('navAnalytics').classList.toggle('active', page === 'analytics');
 
                 // Update header title
-                const titles = { 'dashboard': 'Dashboard', 'allLeads': 'All Leads', 'followups': 'Follow-ups' };
+                const titles = { 'dashboard': 'Dashboard', 'allLeads': 'All Leads', 'followups': 'Follow-ups', 'analytics': 'Analytics' };
                 document.querySelector('.header-title').textContent = titles[page] || 'Dashboard';
 
                 if (page === 'allLeads') {
@@ -2592,6 +2666,10 @@
 
                 if (page === 'followups') {
                     renderFollowupsPage();
+                }
+
+                if (page === 'analytics') {
+                    renderAnalyticsPage();
                 }
             }
 
@@ -3071,6 +3149,141 @@
                         `;
                     }).join('');
                 }
+            }
+
+            let pipelineChartInstance = null;
+            let sourceChartInstance = null;
+            let growthChartInstance = null;
+
+            function renderAnalyticsPage() {
+                const leads = getLeads();
+
+                // 1. KPI Cards
+                document.getElementById('analyticsTotalLeads').textContent = leads.length;
+
+                const booked = leads.filter(l => l.stage === 'booked' || l.stage === 'Booked').length;
+                document.getElementById('analyticsBookedLeads').textContent = booked;
+
+                const conversion = leads.length > 0 ? ((booked / leads.length) * 100).toFixed(1) : 0;
+                document.getElementById('analyticsConversionRate').textContent = conversion + '%';
+
+                const totalScore = leads.reduce((sum, l) => sum + (parseInt(l.score) || 0), 0);
+                const avgScore = leads.length > 0 ? Math.round(totalScore / leads.length) : 0;
+                document.getElementById('analyticsAvgScore').textContent = avgScore;
+
+                // 2. Pipeline Funnel (Bar Chart)
+                const stages = ['new', 'contacted', 'scheduled', 'visited', 'negotiating', 'booked', 'lost'];
+                // Uppercase first letter for labels
+                const stageLabels = stages.map(s => s.charAt(0).toUpperCase() + s.slice(1));
+                const stageData = stages.map(s => leads.filter(l => (l.stage || '').toLowerCase() === s).length);
+
+                const ctxPipeline = document.getElementById('pipelineChart').getContext('2d');
+                if (pipelineChartInstance) pipelineChartInstance.destroy();
+
+                pipelineChartInstance = new Chart(ctxPipeline, {
+                    type: 'bar',
+                    data: {
+                        labels: stageLabels,
+                        datasets: [{
+                            label: 'Leads by Stage',
+                            data: stageData,
+                            backgroundColor: [
+                                '#e0e7ff', '#fef3c7', '#dbeafe', '#ede9fe', '#ffedd5', '#d1fae5', '#fecaca'
+                            ],
+                            borderColor: [
+                                '#4338ca', '#b45309', '#1d4ed8', '#6d28d9', '#c2410c', '#047857', '#dc2626'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false }
+                        }
+                    }
+                });
+
+                // 3. Lead Sources (Doughnut Chart)
+                // Normalize sources
+                const sourceCounts = {};
+                leads.forEach(l => {
+                    const src = (l.source || 'Unknown').trim();
+                    sourceCounts[src] = (sourceCounts[src] || 0) + 1;
+                });
+
+                const ctxSource = document.getElementById('sourceChart').getContext('2d');
+                if (sourceChartInstance) sourceChartInstance.destroy();
+
+                sourceChartInstance = new Chart(ctxSource, {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(sourceCounts),
+                        datasets: [{
+                            data: Object.values(sourceCounts),
+                            backgroundColor: ['#0ea5e9', '#8b5cf6', '#f59e0b', '#10b981', '#ef4444', '#64748b'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+
+                // 4. Growth Trend (Line Chart)
+                // Group by month for last 6 months
+                const months = [];
+                const growthData = [];
+
+                for (let i = 5; i >= 0; i--) {
+                    const date = new Date();
+                    date.setMonth(date.getMonth() - i);
+                    const key = date.toLocaleString('default', { month: 'short' });
+                    months.push(key);
+
+                    // Count leads created in this month
+                    // Note: This is an approximation if we just look at month name, 
+                    // better to check year/month strictly but for demo this is fine.
+                    const monthNum = date.getMonth();
+                    const yearNum = date.getFullYear();
+
+                    const count = leads.filter(l => {
+                        const d = new Date(l.createdAt);
+                        return d.getMonth() === monthNum && d.getFullYear() === yearNum;
+                    }).length;
+
+                    growthData.push(count);
+                }
+
+                const ctxGrowth = document.getElementById('growthChart').getContext('2d');
+                if (growthChartInstance) growthChartInstance.destroy();
+
+                growthChartInstance = new Chart(ctxGrowth, {
+                    type: 'line',
+                    data: {
+                        labels: months,
+                        datasets: [{
+                            label: 'New Leads',
+                            data: growthData,
+                            borderColor: '#0ea5e9',
+                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
             }
 
             function setFollowupTab(tab) {
@@ -3604,6 +3817,7 @@
             window.kanbanDragLeave = kanbanDragLeave;
             window.kanbanDrop = kanbanDrop;
             window.renderFollowupsPage = renderFollowupsPage;
+            window.renderAnalyticsPage = renderAnalyticsPage;
             window.setFollowupTab = setFollowupTab;
             window.markFollowupComplete = markFollowupComplete;
             window.rescheduleFollowup = rescheduleFollowup;
