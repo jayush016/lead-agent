@@ -1468,6 +1468,46 @@
             const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
             console.log('[Lead Agent] Supabase client:', supabase ? 'OK' : 'NULL');
 
+            // ============ WHATSAPP BUSINESS API CONFIG ============
+            // Sign up at: https://www.wati.io or https://www.interakt.shop
+            // Get API key after approval (free trial available)
+            const WHATSAPP_API_ENABLED = false;  // Set to true after getting API key
+            const WHATSAPP_API_URL = '';  // e.g., 'https://api.wati.io/v1'
+            const WHATSAPP_API_KEY = '';  // Your API key from WATI/Interakt
+            const WHATSAPP_TEMPLATE_NAME = 'property_followup';  // Pre-approved template name
+
+            // Send WhatsApp message via API (supports media!)
+            async function sendWhatsAppAPI(phone, message, mediaUrl = null) {
+                if (!WHATSAPP_API_ENABLED) {
+                    console.log('[WhatsApp API] Not enabled. Using wa.me link instead.');
+                    return { success: false, reason: 'API not configured' };
+                }
+
+                try {
+                    const payload = {
+                        phone: `91${phone.replace(/\D/g, '')}`,
+                        message: message,
+                        ...(mediaUrl && { mediaUrl: mediaUrl })  // Include media if provided
+                    };
+
+                    const response = await fetch(`${WHATSAPP_API_URL}/messages/send`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${WHATSAPP_API_KEY}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await response.json();
+                    console.log('[WhatsApp API] Response:', data);
+                    return { success: response.ok, data };
+                } catch (error) {
+                    console.error('[WhatsApp API] Error:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+
             // ============ DATA LAYER ============
             const STORAGE_KEY = 'leadagent_leads';
             let leadsCache = []; // In-memory cache for faster access
