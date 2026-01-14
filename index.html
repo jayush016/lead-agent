@@ -782,6 +782,16 @@
                         <button class="btn btn-secondary" onclick="exportToCSV()">
                             <i class="fas fa-download"></i> Export CSV
                         </button>
+                        <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;">
+                            <button class="btn" id="viewTableBtn" onclick="setAllLeadsView('table')"
+                                style="border-radius:0;border:none;background:var(--accent);color:white;">
+                                <i class="fas fa-table"></i>
+                            </button>
+                            <button class="btn" id="viewKanbanBtn" onclick="setAllLeadsView('kanban')"
+                                style="border-radius:0;border:none;background:var(--surface);">
+                                <i class="fas fa-columns"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -854,6 +864,61 @@
                     </button>
                     <p id="allLeadsLoaded" style="color:var(--text-secondary);font-size:13px;display:none;">All leads
                         loaded</p>
+                </div>
+
+                <!-- Kanban View (Hidden by default) -->
+                <div id="kanbanView" style="display:none;">
+                    <div class="kanban-board">
+                        <div class="kanban-column" data-stage="new">
+                            <div class="kanban-header" style="background:#e0e7ff;color:#4338ca;">
+                                <i class="fas fa-circle" style="font-size:8px;"></i> New Lead
+                                <span class="kanban-count" id="kanban-count-new">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-new"></div>
+                        </div>
+                        <div class="kanban-column" data-stage="contacted">
+                            <div class="kanban-header" style="background:#dbeafe;color:#1d4ed8;">
+                                <i class="fas fa-circle" style="font-size:8px;"></i> Contacted
+                                <span class="kanban-count" id="kanban-count-contacted">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-contacted"></div>
+                        </div>
+                        <div class="kanban-column" data-stage="scheduled">
+                            <div class="kanban-header" style="background:#fef3c7;color:#b45309;">
+                                <i class="fas fa-circle" style="font-size:8px;"></i> Visit Scheduled
+                                <span class="kanban-count" id="kanban-count-scheduled">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-scheduled"></div>
+                        </div>
+                        <div class="kanban-column" data-stage="visited">
+                            <div class="kanban-header" style="background:#d1fae5;color:#047857;">
+                                <i class="fas fa-circle" style="font-size:8px;"></i> Visit Done
+                                <span class="kanban-count" id="kanban-count-visited">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-visited"></div>
+                        </div>
+                        <div class="kanban-column" data-stage="negotiating">
+                            <div class="kanban-header" style="background:#ede9fe;color:#7c3aed;">
+                                <i class="fas fa-circle" style="font-size:8px;"></i> Negotiating
+                                <span class="kanban-count" id="kanban-count-negotiating">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-negotiating"></div>
+                        </div>
+                        <div class="kanban-column" data-stage="booked">
+                            <div class="kanban-header" style="background:#dcfce7;color:#15803d;">
+                                <i class="fas fa-circle" style="font-size:8px;"></i> Booked
+                                <span class="kanban-count" id="kanban-count-booked">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-booked"></div>
+                        </div>
+                        <div class="kanban-column" data-stage="lost">
+                            <div class="kanban-header" style="background:#fee2e2;color:#b91c1c;">
+                                <i class="fas fa-circle" style="font-size:8px;"></i> Lost
+                                <span class="kanban-count" id="kanban-count-lost">0</span>
+                            </div>
+                            <div class="kanban-cards" id="kanban-lost"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div> <!-- End All Leads Page -->
@@ -1520,6 +1585,109 @@
             font-size: 13px;
             outline: none;
             background: white;
+        }
+
+        /* Kanban Board Styles */
+        .kanban-board {
+            display: flex;
+            gap: 16px;
+            overflow-x: auto;
+            padding-bottom: 16px;
+            min-height: 500px;
+        }
+
+        .kanban-column {
+            min-width: 240px;
+            max-width: 280px;
+            flex-shrink: 0;
+            background: var(--surface);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .kanban-header {
+            padding: 12px 16px;
+            font-weight: 600;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border-radius: 12px 12px 0 0;
+        }
+
+        .kanban-count {
+            margin-left: auto;
+            background: rgba(0, 0, 0, 0.1);
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+        }
+
+        .kanban-cards {
+            padding: 8px;
+            min-height: 400px;
+        }
+
+        .kanban-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: grab;
+            transition: all 0.2s;
+        }
+
+        .kanban-card:hover {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+
+        .kanban-card.dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+        }
+
+        .kanban-cards.drag-over {
+            background: rgba(99, 102, 241, 0.1);
+            border: 2px dashed var(--accent);
+            border-radius: 8px;
+        }
+
+        .kanban-card-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .kanban-card-phone {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .kanban-card-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .kanban-card-score {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 600;
+        }
+
+        .kanban-card-score.hot {
+            background: #fef3c7;
+            color: #b45309;
+        }
+
+        .kanban-card-score.warm {
+            background: #e0e7ff;
+            color: #4338ca;
         }
     </style>
 
@@ -2643,6 +2811,110 @@
                 renderAllLeads();
             }
 
+            // ============ KANBAN VIEW ============
+            let allLeadsViewMode = 'table';  // 'table' or 'kanban'
+
+            function setAllLeadsView(mode) {
+                allLeadsViewMode = mode;
+
+                // Update button styles
+                document.getElementById('viewTableBtn').style.background = mode === 'table' ? 'var(--accent)' : 'var(--surface)';
+                document.getElementById('viewTableBtn').style.color = mode === 'table' ? 'white' : 'var(--text-primary)';
+                document.getElementById('viewKanbanBtn').style.background = mode === 'kanban' ? 'var(--accent)' : 'var(--surface)';
+                document.getElementById('viewKanbanBtn').style.color = mode === 'kanban' ? 'white' : 'var(--text-primary)';
+
+                // Toggle views
+                document.querySelector('.table-container').style.display = mode === 'table' ? 'block' : 'none';
+                document.getElementById('loadMoreBtn').parentElement.style.display = mode === 'table' ? 'block' : 'none';
+                document.getElementById('kanbanView').style.display = mode === 'kanban' ? 'block' : 'none';
+
+                if (mode === 'kanban') {
+                    renderKanbanView();
+                }
+            }
+
+            function renderKanbanView() {
+                const leads = filteredAllLeads.length > 0 || document.getElementById('allLeadsSearch')?.value ?
+                    filteredAllLeads : getLeads();
+
+                const stages = ['new', 'contacted', 'scheduled', 'visited', 'negotiating', 'booked', 'lost'];
+
+                // Group leads by stage
+                const grouped = {};
+                stages.forEach(s => grouped[s] = []);
+                leads.forEach(lead => {
+                    const stage = lead.stage || 'new';
+                    if (grouped[stage]) grouped[stage].push(lead);
+                });
+
+                // Render each column
+                stages.forEach(stage => {
+                    const container = document.getElementById(`kanban-${stage}`);
+                    const count = document.getElementById(`kanban-count-${stage}`);
+                    const stageLeads = grouped[stage];
+
+                    count.textContent = stageLeads.length;
+
+                    container.innerHTML = stageLeads.map(lead => `
+                        <div class="kanban-card" draggable="true" data-lead-id="${lead.id}" 
+                             ondragstart="kanbanDragStart(event)" ondragend="kanbanDragEnd(event)"
+                             onclick="viewLead('${lead.id}')">
+                            <div class="kanban-card-name">${lead.name}</div>
+                            <div class="kanban-card-phone">+91 ${lead.phone}</div>
+                            <div class="kanban-card-info">
+                                <span>${lead.property || 'Not specified'}</span>
+                                <span class="kanban-card-score ${lead.score >= 70 ? 'hot' : 'warm'}">${lead.score}</span>
+                            </div>
+                        </div>
+                    `).join('') || '<div style="text-align:center;padding:20px;color:var(--text-secondary);font-size:12px;">No leads</div>';
+
+                    // Add drop handlers
+                    container.ondragover = kanbanDragOver;
+                    container.ondragleave = kanbanDragLeave;
+                    container.ondrop = (e) => kanbanDrop(e, stage);
+                });
+            }
+
+            let draggedLeadId = null;
+
+            function kanbanDragStart(e) {
+                draggedLeadId = e.target.dataset.leadId;
+                e.target.classList.add('dragging');
+            }
+
+            function kanbanDragEnd(e) {
+                e.target.classList.remove('dragging');
+            }
+
+            function kanbanDragOver(e) {
+                e.preventDefault();
+                e.currentTarget.classList.add('drag-over');
+            }
+
+            function kanbanDragLeave(e) {
+                e.currentTarget.classList.remove('drag-over');
+            }
+
+            async function kanbanDrop(e, newStage) {
+                e.preventDefault();
+                e.currentTarget.classList.remove('drag-over');
+
+                if (!draggedLeadId) return;
+
+                try {
+                    await updateLeadInDb(draggedLeadId, { stage: newStage });
+                    await loadLeads();
+                    filterAllLeads();  // This will re-render table and update stats
+                    renderKanbanView();
+                    console.log('[Kanban] Moved lead to', newStage);
+                } catch (error) {
+                    console.error('[Kanban] Error moving lead:', error);
+                    alert('Error moving lead: ' + error.message);
+                }
+
+                draggedLeadId = null;
+            }
+
             // ============ INLINE EDIT ============
             async function inlineEdit(cell, leadId, field) {
                 // Prevent re-editing if already editing
@@ -2841,6 +3113,13 @@
             window.inlineEdit = inlineEdit;
             window.inlineEditStage = inlineEditStage;
             window.inlineEditScore = inlineEditScore;
+            window.setAllLeadsView = setAllLeadsView;
+            window.renderKanbanView = renderKanbanView;
+            window.kanbanDragStart = kanbanDragStart;
+            window.kanbanDragEnd = kanbanDragEnd;
+            window.kanbanDragOver = kanbanDragOver;
+            window.kanbanDragLeave = kanbanDragLeave;
+            window.kanbanDrop = kanbanDrop;
 
 
             // Initialize app - run immediately if DOM ready, otherwise wait
