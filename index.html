@@ -775,10 +775,50 @@
                             style="display:none;background:#25D366;border-color:#25D366;">
                             <i class="fab fa-whatsapp"></i> WhatsApp
                         </button>
+                        <button class="btn btn-secondary" onclick="bulkScheduleFollowUp()" id="bulkFollowUpBtn"
+                            style="display:none;">
+                            <i class="fas fa-calendar-plus"></i> Follow-up
+                        </button>
                         <button class="btn btn-secondary" onclick="exportToCSV()">
                             <i class="fas fa-download"></i> Export CSV
                         </button>
                     </div>
+                </div>
+
+                <!-- Search & Filters Row -->
+                <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+                    <div class="search-box" style="flex:1;min-width:200px;">
+                        <input type="text" id="allLeadsSearch" class="search-input"
+                            placeholder="Search by name, phone, location..." oninput="filterAllLeads()">
+                    </div>
+                    <select id="allLeadsFilterStage" class="form-select"
+                        style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);min-width:140px;"
+                        onchange="filterAllLeads()">
+                        <option value="">All Stages</option>
+                        <option value="new">New Lead</option>
+                        <option value="contacted">Contacted</option>
+                        <option value="scheduled">Visit Scheduled</option>
+                        <option value="visited">Visit Done</option>
+                        <option value="negotiating">Negotiating</option>
+                        <option value="booked">Booked</option>
+                        <option value="lost">Lost</option>
+                    </select>
+                    <select id="allLeadsFilterLocation" class="form-select"
+                        style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);min-width:140px;"
+                        onchange="filterAllLeads()">
+                        <option value="">All Locations</option>
+                    </select>
+                    <select id="allLeadsFilterScore" class="form-select"
+                        style="padding:10px 14px;border-radius:8px;border:1px solid var(--border);min-width:120px;"
+                        onchange="filterAllLeads()">
+                        <option value="">All Scores</option>
+                        <option value="hot">Hot (70+)</option>
+                        <option value="warm">Warm (50-69)</option>
+                        <option value="cold">Cold (<50)< /option>
+                    </select>
+                    <button class="btn btn-secondary" onclick="clearAllLeadsFilters()" style="padding:10px 14px;">
+                        <i class="fas fa-times"></i> Clear
+                    </button>
                 </div>
 
                 <!-- All Leads Table with Checkboxes -->
@@ -2172,6 +2212,7 @@
             let selectedLeadIds = new Set();
             let allLeadsSortColumn = 'createdAt';
             let allLeadsSortDirection = 'desc';
+            let filteredAllLeads = [];  // Filtered leads for All Leads page
 
             function showPage(page) {
                 currentPage = page;
@@ -2188,13 +2229,67 @@
                 if (page === 'allLeads') {
                     allLeadsDisplayed = 0;
                     selectedLeadIds.clear();
-                    renderAllLeads();
+                    populateAllLeadsLocationFilter();
+                    filterAllLeads();  // Apply filters and render
                 }
+            }
+
+            function populateAllLeadsLocationFilter() {
+                const leads = getLeads();
+                const locations = [...new Set(leads.map(l => l.location).filter(Boolean))].sort();
+                const select = document.getElementById('allLeadsFilterLocation');
+                select.innerHTML = '<option value="">All Locations</option>' +
+                    locations.map(loc => `<option value="${loc}">${loc}</option>`).join('');
+            }
+
+            function filterAllLeads() {
+                const search = document.getElementById('allLeadsSearch')?.value?.toLowerCase() || '';
+                const stage = document.getElementById('allLeadsFilterStage')?.value || '';
+                const location = document.getElementById('allLeadsFilterLocation')?.value || '';
+                const scoreFilter = document.getElementById('allLeadsFilterScore')?.value || '';
+
+                let leads = getLeads();
+
+                // Apply filters
+                if (search) {
+                    leads = leads.filter(l =>
+                        l.name?.toLowerCase().includes(search) ||
+                        l.phone?.includes(search) ||
+                        l.location?.toLowerCase().includes(search)
+                    );
+                }
+                if (stage) {
+                    leads = leads.filter(l => l.stage === stage);
+                }
+                if (location) {
+                    leads = leads.filter(l => l.location === location);
+                }
+                if (scoreFilter === 'hot') {
+                    leads = leads.filter(l => l.score >= 70);
+                } else if (scoreFilter === 'warm') {
+                    leads = leads.filter(l => l.score >= 50 && l.score < 70);
+                } else if (scoreFilter === 'cold') {
+                    leads = leads.filter(l => l.score < 50);
+                }
+
+                filteredAllLeads = leads;
+                allLeadsDisplayed = 0;
+                renderAllLeads();
+            }
+
+            function clearAllLeadsFilters() {
+                document.getElementById('allLeadsSearch').value = '';
+                document.getElementById('allLeadsFilterStage').value = '';
+                document.getElementById('allLeadsFilterLocation').value = '';
+                document.getElementById('allLeadsFilterScore').value = '';
+                filterAllLeads();
             }
 
             function renderAllLeads() {
                 const tbody = document.getElementById('allLeadsTableBody');
-                let leads = getLeads();
+                // Use filteredAllLeads if available, otherwise use all leads
+                let leads = filteredAllLeads.length > 0 || document.getElementById('allLeadsSearch')?.value ?
+                    [...filteredAllLeads] : [...getLeads()];
 
                 // Sort leads
                 leads.sort((a, b) => {
@@ -2295,6 +2390,7 @@
                 document.getElementById('bulkStageBtn').style.display = count > 0 ? 'inline-block' : 'none';
                 document.getElementById('bulkDeleteBtn').style.display = count > 0 ? 'inline-block' : 'none';
                 document.getElementById('bulkWhatsAppBtn').style.display = count > 0 ? 'inline-block' : 'none';
+                document.getElementById('bulkFollowUpBtn').style.display = count > 0 ? 'inline-block' : 'none';
 
                 // Update select all checkbox
                 const allCheckboxes = document.querySelectorAll('.leadCheckbox');
@@ -2431,6 +2527,48 @@
                 openNext();
             }
 
+            async function bulkScheduleFollowUp() {
+                console.log('[bulkScheduleFollowUp] Called, selectedLeadIds:', selectedLeadIds.size);
+                const count = selectedLeadIds.size;
+                if (count === 0) {
+                    alert('No leads selected. Please check some boxes first.');
+                    return;
+                }
+
+                // Get follow-up date and time
+                const today = new Date().toISOString().split('T')[0];
+                const date = prompt(`Schedule follow-up for ${count} lead(s)\n\nEnter date (YYYY-MM-DD):`, today);
+                if (!date) return;
+
+                const time = prompt('Enter time (HH:MM):', '10:00');
+                if (!time) return;
+
+                const note = prompt('Follow-up note (optional):', 'Follow up with lead');
+
+                console.log('[bulkScheduleFollowUp] Scheduling:', { date, time, note });
+
+                try {
+                    for (const id of selectedLeadIds) {
+                        await updateLeadInDb(id, {
+                            follow_up_date: date,
+                            follow_up_time: time,
+                            follow_up_note: note || ''
+                        });
+                    }
+                    console.log('[bulkScheduleFollowUp] Complete');
+
+                    selectedLeadIds.clear();
+                    await loadLeads();
+                    renderAllLeads();
+                    renderLeads();
+                    updateStats();
+                    alert(`Follow-up scheduled for ${count} lead(s) on ${date} at ${time}!`);
+                } catch (e) {
+                    console.error('[bulkScheduleFollowUp] Error:', e);
+                    alert('Error scheduling follow-up: ' + e.message);
+                }
+            }
+
             function exportToCSV() {
                 const leads = getLeads();
                 if (leads.length === 0) {
@@ -2533,6 +2671,9 @@
             window.sortAllLeads = sortAllLeads;
             window.loadMoreLeads = loadMoreLeads;
             window.bulkWhatsApp = bulkWhatsApp;
+            window.filterAllLeads = filterAllLeads;
+            window.clearAllLeadsFilters = clearAllLeadsFilters;
+            window.bulkScheduleFollowUp = bulkScheduleFollowUp;
 
 
             // Initialize app - run immediately if DOM ready, otherwise wait
