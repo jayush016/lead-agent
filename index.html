@@ -1802,7 +1802,9 @@
             `;
 
                 openPanel();
-                document.getElementById('panelEditBtn').style.display = 'inline-flex';
+                const editBtn = document.getElementById('panelEditBtn');
+                editBtn.style.display = 'inline-flex';
+                editBtn.onclick = () => editLead(id);
             }
 
             function logInteraction(id, type, desc) {
