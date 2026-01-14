@@ -1491,6 +1491,36 @@
             display: flex;
             gap: 8px;
         }
+
+        /* Inline Edit Styles */
+        .editable-cell {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .editable-cell:hover {
+            background: rgba(99, 102, 241, 0.08);
+        }
+
+        .inline-edit-input {
+            width: 100%;
+            padding: 6px 10px;
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            background: white;
+        }
+
+        .inline-edit-select {
+            width: 100%;
+            padding: 6px 10px;
+            border: 2px solid var(--accent);
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            background: white;
+        }
     </style>
 
     <script>
@@ -2323,9 +2353,9 @@
                 };
 
                 tbody.innerHTML = leadsToShow.map(lead => `
-                    <tr>
+                    <tr data-lead-id="${lead.id}">
                         <td><input type="checkbox" class="leadCheckbox" data-id="${lead.id}" onchange="updateSelectedCount()" ${selectedLeadIds.has(lead.id) ? 'checked' : ''}></td>
-                        <td>
+                        <td ondblclick="inlineEdit(this, '${lead.id}', 'name')" class="editable-cell" title="Double-click to edit">
                             <div class="lead-cell">
                                 <div class="lead-avatar">${getInitials(lead.name)}</div>
                                 <div>
@@ -2334,11 +2364,11 @@
                                 </div>
                             </div>
                         </td>
-                        <td>${lead.property || '-'}</td>
+                        <td ondblclick="inlineEdit(this, '${lead.id}', 'property')" class="editable-cell" title="Double-click to edit">${lead.property || '-'}</td>
                         <td>${formatBudget(lead.budgetMin, lead.budgetMax)}</td>
-                        <td>${lead.location || '-'}</td>
-                        <td><span class="badge badge-${lead.stage}"><i class="fas fa-circle" style="font-size:6px"></i> ${stageLabels[lead.stage] || 'New Lead'}</span></td>
-                        <td><span class="score ${lead.score >= 70 ? 'hot' : 'warm'}">${lead.score}</span></td>
+                        <td ondblclick="inlineEdit(this, '${lead.id}', 'location')" class="editable-cell" title="Double-click to edit">${lead.location || '-'}</td>
+                        <td ondblclick="inlineEditStage(this, '${lead.id}')" class="editable-cell" title="Double-click to change stage"><span class="badge badge-${lead.stage}"><i class="fas fa-circle" style="font-size:6px"></i> ${stageLabels[lead.stage] || 'New Lead'}</span></td>
+                        <td ondblclick="inlineEditScore(this, '${lead.id}')" class="editable-cell" title="Double-click to edit"><span class="score ${lead.score >= 70 ? 'hot' : 'warm'}">${lead.score}</span></td>
                         <td>
                             <div class="action-btns">
                                 <a href="tel:${lead.phone}" class="action-btn" title="Call"><i class="fas fa-phone"></i></a>
@@ -2613,6 +2643,140 @@
                 renderAllLeads();
             }
 
+            // ============ INLINE EDIT ============
+            async function inlineEdit(cell, leadId, field) {
+                // Prevent re-editing if already editing
+                if (cell.querySelector('input')) return;
+
+                const leads = getLeads();
+                const lead = leads.find(l => l.id === leadId);
+                if (!lead) return;
+
+                let currentValue = lead[field] || '';
+                // For name field, get just the name
+                if (field === 'name') {
+                    currentValue = lead.name;
+                }
+
+                const originalHtml = cell.innerHTML;
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentValue;
+                input.className = 'inline-edit-input';
+
+                cell.innerHTML = '';
+                cell.appendChild(input);
+                input.focus();
+                input.select();
+
+                const save = async () => {
+                    const newValue = input.value.trim();
+                    if (newValue && newValue !== currentValue) {
+                        try {
+                            await updateLeadInDb(leadId, { [field]: newValue });
+                            await loadLeads();
+                            filterAllLeads();  // Re-render with filters
+                        } catch (e) {
+                            alert('Error saving: ' + e.message);
+                            cell.innerHTML = originalHtml;
+                        }
+                    } else {
+                        cell.innerHTML = originalHtml;
+                    }
+                };
+
+                input.onblur = save;
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') save();
+                    if (e.key === 'Escape') cell.innerHTML = originalHtml;
+                };
+            }
+
+            async function inlineEditStage(cell, leadId) {
+                if (cell.querySelector('select')) return;
+
+                const stages = ['new', 'contacted', 'scheduled', 'visited', 'negotiating', 'booked', 'lost'];
+                const stageLabels = ['New Lead', 'Contacted', 'Visit Scheduled', 'Visit Done', 'Negotiating', 'Booked', 'Lost'];
+
+                const leads = getLeads();
+                const lead = leads.find(l => l.id === leadId);
+                if (!lead) return;
+
+                const originalHtml = cell.innerHTML;
+                const select = document.createElement('select');
+                select.className = 'inline-edit-select';
+                select.innerHTML = stages.map((s, i) =>
+                    `<option value="${s}" ${lead.stage === s ? 'selected' : ''}>${stageLabels[i]}</option>`
+                ).join('');
+
+                cell.innerHTML = '';
+                cell.appendChild(select);
+                select.focus();
+
+                const save = async () => {
+                    const newStage = select.value;
+                    if (newStage !== lead.stage) {
+                        try {
+                            await updateLeadInDb(leadId, { stage: newStage });
+                            await loadLeads();
+                            filterAllLeads();
+                        } catch (e) {
+                            alert('Error saving: ' + e.message);
+                            cell.innerHTML = originalHtml;
+                        }
+                    } else {
+                        cell.innerHTML = originalHtml;
+                    }
+                };
+
+                select.onchange = save;
+                select.onblur = save;
+            }
+
+            async function inlineEditScore(cell, leadId) {
+                if (cell.querySelector('input')) return;
+
+                const leads = getLeads();
+                const lead = leads.find(l => l.id === leadId);
+                if (!lead) return;
+
+                const originalHtml = cell.innerHTML;
+                const input = document.createElement('input');
+                input.type = 'number';
+                input.min = '0';
+                input.max = '100';
+                input.value = lead.score || 50;
+                input.className = 'inline-edit-input';
+                input.style.width = '60px';
+
+                cell.innerHTML = '';
+                cell.appendChild(input);
+                input.focus();
+                input.select();
+
+                const save = async () => {
+                    const newScore = parseInt(input.value) || 50;
+                    if (newScore !== lead.score) {
+                        try {
+                            await updateLeadInDb(leadId, { score: newScore });
+                            await loadLeads();
+                            filterAllLeads();
+                        } catch (e) {
+                            alert('Error saving: ' + e.message);
+                            cell.innerHTML = originalHtml;
+                        }
+                    } else {
+                        cell.innerHTML = originalHtml;
+                    }
+                };
+
+                input.onblur = save;
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') save();
+                    if (e.key === 'Escape') cell.innerHTML = originalHtml;
+                };
+            }
+
             // ============ INIT ============
             function initDemoData() {
                 if (localStorage.getItem('leadagent_initialized')) return;
@@ -2674,6 +2838,9 @@
             window.filterAllLeads = filterAllLeads;
             window.clearAllLeadsFilters = clearAllLeadsFilters;
             window.bulkScheduleFollowUp = bulkScheduleFollowUp;
+            window.inlineEdit = inlineEdit;
+            window.inlineEditStage = inlineEditStage;
+            window.inlineEditScore = inlineEditScore;
 
 
             // Initialize app - run immediately if DOM ready, otherwise wait
