@@ -496,31 +496,31 @@
         </div>
         <ul class="nav-menu">
             <li class="nav-item">
-                <a href="#" class="nav-link active">
+                <a href="#" class="nav-link active" id="navDashboard" onclick="showPage('dashboard')">
                     <i class="fas fa-th-large"></i>
                     Dashboard
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="#" class="nav-link" id="navAllLeads" onclick="showPage('allLeads')">
                     <i class="fas fa-users"></i>
                     All Leads
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="#" class="nav-link" onclick="alert('Follow-ups page coming soon!')">
                     <i class="fas fa-calendar-check"></i>
                     Follow-ups
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="#" class="nav-link" onclick="alert('Analytics page coming soon!')">
                     <i class="fas fa-chart-bar"></i>
                     Analytics
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link">
+                <a href="#" class="nav-link" onclick="alert('Settings page coming soon!')">
                     <i class="fas fa-cog"></i>
                     Settings
                 </a>
@@ -537,214 +537,283 @@
             </button>
         </header>
 
-        <!-- Stats -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon blue">
-                        <i class="fas fa-users"></i>
+        <!-- Dashboard Page -->
+        <div id="dashboardPage">
+            <!-- Stats -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-users"></i>
+                        </div>
                     </div>
+                    <div class="stat-value">5</div>
+                    <div class="stat-label">Total Leads</div>
                 </div>
-                <div class="stat-value">5</div>
-                <div class="stat-label">Total Leads</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon green">
-                        <i class="fas fa-user-plus"></i>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon green">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
                     </div>
+                    <div class="stat-value">2</div>
+                    <div class="stat-label">New This Week</div>
                 </div>
-                <div class="stat-value">2</div>
-                <div class="stat-label">New This Week</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon orange">
-                        <i class="fas fa-fire"></i>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon orange">
+                            <i class="fas fa-fire"></i>
+                        </div>
                     </div>
+                    <div class="stat-value">3</div>
+                    <div class="stat-label">Hot Leads</div>
                 </div>
-                <div class="stat-value">3</div>
-                <div class="stat-label">Hot Leads</div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-card-header">
-                    <div class="stat-icon purple">
-                        <i class="fas fa-phone-alt"></i>
+                <div class="stat-card">
+                    <div class="stat-card-header">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-phone-alt"></i>
+                        </div>
                     </div>
-                </div>
-                <div class="stat-value" id="followupCount">0</div>
-                <div class="stat-label">Follow-ups Today</div>
-            </div>
-        </div>
-
-        <!-- Today's Follow-ups Section -->
-        <div class="content" id="followupsSection" style="display:none;">
-            <div class="section-header">
-                <h2 class="section-title"><i class="fas fa-bell" style="color:var(--warning);margin-right:8px;"></i>
-                    Today's Follow-ups</h2>
-            </div>
-            <div class="followup-list" id="followupList">
-                <!-- Filled by JS -->
-            </div>
-        </div>
-
-        <!-- Leads Table -->
-        <div class="content">
-            <div class="section-header">
-                <h2 class="section-title">All Leads <span id="leadCount"
-                        style="font-size:14px;color:var(--text-secondary);font-weight:400;"></span></h2>
-                <div class="search-box">
-                    <input type="text" class="search-input" placeholder="Search by name, phone, location...">
-                    <button class="btn btn-secondary" onclick="openFilterPanel()"><i class="fas fa-filter"></i>
-                        Filters</button>
+                    <div class="stat-value" id="followupCount">0</div>
+                    <div class="stat-label">Follow-ups Today</div>
                 </div>
             </div>
 
-            <div class="table-container">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Lead</th>
-                            <th>Property</th>
-                            <th>Budget</th>
-                            <th>Location</th>
-                            <th>Stage</th>
-                            <th>Remarks</th>
-                            <th>Score</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>
-                                <div class="lead-cell">
-                                    <div class="lead-avatar">VM</div>
-                                    <div>
-                                        <div class="lead-name">Vikram Mehta</div>
-                                        <div class="lead-phone">+91 98234 56789</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>3 BHK</td>
-                            <td>₹80L - 1.2Cr</td>
-                            <td>Baner</td>
-                            <td><span class="badge badge-visited"><i class="fas fa-circle" style="font-size:6px"></i>
-                                    Visit Done</span></td>
-                            <td><span class="score hot">85</span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
-                                    <button class="action-btn whatsapp" title="WhatsApp"><i
-                                            class="fab fa-whatsapp"></i></button>
-                                    <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="lead-cell">
-                                    <div class="lead-avatar">SK</div>
-                                    <div>
-                                        <div class="lead-name">Sneha Kulkarni</div>
-                                        <div class="lead-phone">+91 98345 67890</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>2 BHK</td>
-                            <td>₹50L - 70L</td>
-                            <td>Hinjewadi</td>
-                            <td><span class="badge badge-negotiating"><i class="fas fa-circle"
-                                        style="font-size:6px"></i>
-                                    Negotiating</span></td>
-                            <td><span class="score hot">78</span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
-                                    <button class="action-btn whatsapp" title="WhatsApp"><i
-                                            class="fab fa-whatsapp"></i></button>
-                                    <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="lead-cell">
-                                    <div class="lead-avatar">RJ</div>
-                                    <div>
-                                        <div class="lead-name">Ramesh Joshi</div>
-                                        <div class="lead-phone">+91 98456 78901</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>2 BHK</td>
-                            <td>₹40L - 55L</td>
-                            <td>Chinchwad</td>
-                            <td><span class="badge badge-new"><i class="fas fa-circle" style="font-size:6px"></i>
-                                    New Lead</span></td>
-                            <td><span class="score warm">72</span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
-                                    <button class="action-btn whatsapp" title="WhatsApp"><i
-                                            class="fab fa-whatsapp"></i></button>
-                                    <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="lead-cell">
-                                    <div class="lead-avatar">AD</div>
-                                    <div>
-                                        <div class="lead-name">Dr. Anjali Deshmukh</div>
-                                        <div class="lead-phone">+91 98567 89012</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>4 BHK</td>
-                            <td>₹1.5Cr - 2.5Cr</td>
-                            <td>Koregaon Park</td>
-                            <td><span class="badge badge-booked"><i class="fas fa-circle" style="font-size:6px"></i>
-                                    Booked</span></td>
-                            <td><span class="score hot">92</span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
-                                    <button class="action-btn whatsapp" title="WhatsApp"><i
-                                            class="fab fa-whatsapp"></i></button>
-                                    <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <div class="lead-cell">
-                                    <div class="lead-avatar">SP</div>
-                                    <div>
-                                        <div class="lead-name">Sunil Pawar</div>
-                                        <div class="lead-phone">+91 98678 90123</div>
-                                    </div>
-                                </div>
-                            </td>
-                            <td>2 BHK</td>
-                            <td>₹35L - 45L</td>
-                            <td>Hadapsar</td>
-                            <td><span class="badge badge-contacted"><i class="fas fa-circle" style="font-size:6px"></i>
-                                    Contacted</span></td>
-                            <td><span class="score warm">65</span></td>
-                            <td>
-                                <div class="action-btns">
-                                    <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
-                                    <button class="action-btn whatsapp" title="WhatsApp"><i
-                                            class="fab fa-whatsapp"></i></button>
-                                    <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
-                                </div>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- Today's Follow-ups Section -->
+            <div class="content" id="followupsSection" style="display:none;">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-bell" style="color:var(--warning);margin-right:8px;"></i>
+                        Today's Follow-ups</h2>
+                </div>
+                <div class="followup-list" id="followupList">
+                    <!-- Filled by JS -->
+                </div>
             </div>
-        </div>
+
+            <!-- Leads Table -->
+            <div class="content">
+                <div class="section-header">
+                    <h2 class="section-title">All Leads <span id="leadCount"
+                            style="font-size:14px;color:var(--text-secondary);font-weight:400;"></span></h2>
+                    <div class="search-box">
+                        <input type="text" class="search-input" placeholder="Search by name, phone, location...">
+                        <button class="btn btn-secondary" onclick="openFilterPanel()"><i class="fas fa-filter"></i>
+                            Filters</button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Lead</th>
+                                <th>Property</th>
+                                <th>Budget</th>
+                                <th>Location</th>
+                                <th>Stage</th>
+                                <th>Remarks</th>
+                                <th>Score</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>
+                                    <div class="lead-cell">
+                                        <div class="lead-avatar">VM</div>
+                                        <div>
+                                            <div class="lead-name">Vikram Mehta</div>
+                                            <div class="lead-phone">+91 98234 56789</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>3 BHK</td>
+                                <td>₹80L - 1.2Cr</td>
+                                <td>Baner</td>
+                                <td><span class="badge badge-visited"><i class="fas fa-circle"
+                                            style="font-size:6px"></i>
+                                        Visit Done</span></td>
+                                <td><span class="score hot">85</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
+                                        <button class="action-btn whatsapp" title="WhatsApp"><i
+                                                class="fab fa-whatsapp"></i></button>
+                                        <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lead-cell">
+                                        <div class="lead-avatar">SK</div>
+                                        <div>
+                                            <div class="lead-name">Sneha Kulkarni</div>
+                                            <div class="lead-phone">+91 98345 67890</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>2 BHK</td>
+                                <td>₹50L - 70L</td>
+                                <td>Hinjewadi</td>
+                                <td><span class="badge badge-negotiating"><i class="fas fa-circle"
+                                            style="font-size:6px"></i>
+                                        Negotiating</span></td>
+                                <td><span class="score hot">78</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
+                                        <button class="action-btn whatsapp" title="WhatsApp"><i
+                                                class="fab fa-whatsapp"></i></button>
+                                        <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lead-cell">
+                                        <div class="lead-avatar">RJ</div>
+                                        <div>
+                                            <div class="lead-name">Ramesh Joshi</div>
+                                            <div class="lead-phone">+91 98456 78901</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>2 BHK</td>
+                                <td>₹40L - 55L</td>
+                                <td>Chinchwad</td>
+                                <td><span class="badge badge-new"><i class="fas fa-circle" style="font-size:6px"></i>
+                                        New Lead</span></td>
+                                <td><span class="score warm">72</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
+                                        <button class="action-btn whatsapp" title="WhatsApp"><i
+                                                class="fab fa-whatsapp"></i></button>
+                                        <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lead-cell">
+                                        <div class="lead-avatar">AD</div>
+                                        <div>
+                                            <div class="lead-name">Dr. Anjali Deshmukh</div>
+                                            <div class="lead-phone">+91 98567 89012</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>4 BHK</td>
+                                <td>₹1.5Cr - 2.5Cr</td>
+                                <td>Koregaon Park</td>
+                                <td><span class="badge badge-booked"><i class="fas fa-circle" style="font-size:6px"></i>
+                                        Booked</span></td>
+                                <td><span class="score hot">92</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
+                                        <button class="action-btn whatsapp" title="WhatsApp"><i
+                                                class="fab fa-whatsapp"></i></button>
+                                        <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div class="lead-cell">
+                                        <div class="lead-avatar">SP</div>
+                                        <div>
+                                            <div class="lead-name">Sunil Pawar</div>
+                                            <div class="lead-phone">+91 98678 90123</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>2 BHK</td>
+                                <td>₹35L - 45L</td>
+                                <td>Hadapsar</td>
+                                <td><span class="badge badge-contacted"><i class="fas fa-circle"
+                                            style="font-size:6px"></i>
+                                        Contacted</span></td>
+                                <td><span class="score warm">65</span></td>
+                                <td>
+                                    <div class="action-btns">
+                                        <button class="action-btn" title="Call"><i class="fas fa-phone"></i></button>
+                                        <button class="action-btn whatsapp" title="WhatsApp"><i
+                                                class="fab fa-whatsapp"></i></button>
+                                        <button class="action-btn" title="View"><i class="fas fa-eye"></i></button>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div> <!-- End Dashboard Page -->
+
+        <!-- All Leads Page (Hidden by default) -->
+        <div id="allLeadsPage" style="display:none;">
+            <div class="content">
+                <div class="section-header" style="flex-wrap:wrap;gap:12px;">
+                    <h2 class="section-title"><i class="fas fa-users" style="margin-right:8px;"></i> All Leads
+                        <span id="allLeadsCount"
+                            style="font-size:14px;color:var(--text-secondary);font-weight:400;"></span>
+                    </h2>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <span id="selectedCount"
+                            style="padding:8px 12px;background:var(--accent);color:white;border-radius:6px;font-size:13px;display:none;">
+                            <span id="selectedNum">0</span> selected
+                        </span>
+                        <button class="btn btn-secondary" onclick="bulkChangeStage()" id="bulkStageBtn"
+                            style="display:none;">
+                            <i class="fas fa-exchange-alt"></i> Change Stage
+                        </button>
+                        <button class="btn btn-danger" onclick="bulkDelete()" id="bulkDeleteBtn" style="display:none;">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                        <button class="btn btn-secondary" onclick="exportToCSV()">
+                            <i class="fas fa-download"></i> Export CSV
+                        </button>
+                    </div>
+                </div>
+
+                <!-- All Leads Table with Checkboxes -->
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th style="width:40px;">
+                                    <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)">
+                                </th>
+                                <th onclick="sortAllLeads('name')" style="cursor:pointer;">Lead <i class="fas fa-sort"
+                                        style="opacity:0.3;margin-left:4px;"></i></th>
+                                <th>Property</th>
+                                <th>Budget</th>
+                                <th>Location</th>
+                                <th onclick="sortAllLeads('stage')" style="cursor:pointer;">Stage <i class="fas fa-sort"
+                                        style="opacity:0.3;margin-left:4px;"></i></th>
+                                <th onclick="sortAllLeads('score')" style="cursor:pointer;">Score <i class="fas fa-sort"
+                                        style="opacity:0.3;margin-left:4px;"></i></th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="allLeadsTableBody">
+                            <!-- Filled by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Load More Button -->
+                <div style="text-align:center;padding:24px;">
+                    <button class="btn btn-secondary" id="loadMoreBtn" onclick="loadMoreLeads()" style="display:none;">
+                        <i class="fas fa-plus"></i> Load More
+                    </button>
+                    <p id="allLeadsLoaded" style="color:var(--text-secondary);font-size:13px;display:none;">All leads
+                        loaded</p>
+                </div>
+            </div>
+        </div> <!-- End All Leads Page -->
+
     </main>
 
     <!-- Add Lead Modal -->
@@ -2052,6 +2121,236 @@
                 document.querySelectorAll('.stat-value')[2].textContent = leads.filter(l => l.score >= 70).length;
             }
 
+            // ============ ALL LEADS PAGE ============
+            let currentPage = 'dashboard';
+            let allLeadsDisplayed = 0;
+            const LEADS_PER_PAGE = 25;
+            let selectedLeadIds = new Set();
+            let allLeadsSortColumn = 'createdAt';
+            let allLeadsSortDirection = 'desc';
+
+            function showPage(page) {
+                currentPage = page;
+                document.getElementById('dashboardPage').style.display = page === 'dashboard' ? 'block' : 'none';
+                document.getElementById('allLeadsPage').style.display = page === 'allLeads' ? 'block' : 'none';
+
+                // Update nav active state
+                document.getElementById('navDashboard').classList.toggle('active', page === 'dashboard');
+                document.getElementById('navAllLeads').classList.toggle('active', page === 'allLeads');
+
+                // Update header title
+                document.querySelector('.header-title').textContent = page === 'dashboard' ? 'Dashboard' : 'All Leads';
+
+                if (page === 'allLeads') {
+                    allLeadsDisplayed = 0;
+                    selectedLeadIds.clear();
+                    renderAllLeads();
+                }
+            }
+
+            function renderAllLeads() {
+                const tbody = document.getElementById('allLeadsTableBody');
+                let leads = getLeads();
+
+                // Sort leads
+                leads.sort((a, b) => {
+                    let aVal = a[allLeadsSortColumn];
+                    let bVal = b[allLeadsSortColumn];
+                    if (allLeadsSortColumn === 'score') {
+                        aVal = parseInt(aVal) || 0;
+                        bVal = parseInt(bVal) || 0;
+                    }
+                    if (aVal < bVal) return allLeadsSortDirection === 'asc' ? -1 : 1;
+                    if (aVal > bVal) return allLeadsSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+
+                // Paginate - show next batch
+                const start = allLeadsDisplayed;
+                const end = start + LEADS_PER_PAGE;
+                const leadsToShow = leads.slice(0, end);
+                allLeadsDisplayed = leadsToShow.length;
+
+                document.getElementById('allLeadsCount').textContent = `(${leads.length} total)`;
+
+                if (leads.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary);">No leads yet</td></tr>';
+                    return;
+                }
+
+                const stageLabels = {
+                    'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
+                    'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
+                };
+
+                tbody.innerHTML = leadsToShow.map(lead => `
+                    <tr>
+                        <td><input type="checkbox" class="leadCheckbox" data-id="${lead.id}" onchange="updateSelectedCount()" ${selectedLeadIds.has(lead.id) ? 'checked' : ''}></td>
+                        <td>
+                            <div class="lead-cell">
+                                <div class="lead-avatar">${getInitials(lead.name)}</div>
+                                <div>
+                                    <div class="lead-name">${lead.name}</div>
+                                    <div class="lead-phone">+91 ${lead.phone}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>${lead.property || '-'}</td>
+                        <td>${formatBudget(lead.budgetMin, lead.budgetMax)}</td>
+                        <td>${lead.location || '-'}</td>
+                        <td><span class="badge badge-${lead.stage}"><i class="fas fa-circle" style="font-size:6px"></i> ${stageLabels[lead.stage] || 'New Lead'}</span></td>
+                        <td><span class="score ${lead.score >= 70 ? 'hot' : 'warm'}">${lead.score}</span></td>
+                        <td>
+                            <div class="action-btns">
+                                <a href="tel:${lead.phone}" class="action-btn" title="Call"><i class="fas fa-phone"></i></a>
+                                <a href="https://wa.me/91${lead.phone}" target="_blank" class="action-btn whatsapp" title="WhatsApp"><i class="fab fa-whatsapp"></i></a>
+                                <button class="action-btn" title="View" onclick="viewLead('${lead.id}')"><i class="fas fa-eye"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('');
+
+                // Show/hide Load More button
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                const allLoadedMsg = document.getElementById('allLeadsLoaded');
+                if (allLeadsDisplayed < leads.length) {
+                    loadMoreBtn.style.display = 'inline-block';
+                    allLoadedMsg.style.display = 'none';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                    allLoadedMsg.style.display = 'block';
+                }
+            }
+
+            function loadMoreLeads() {
+                renderAllLeads();
+            }
+
+            function toggleSelectAll(checkbox) {
+                const checkboxes = document.querySelectorAll('.leadCheckbox');
+                checkboxes.forEach(cb => {
+                    cb.checked = checkbox.checked;
+                    if (checkbox.checked) {
+                        selectedLeadIds.add(cb.dataset.id);
+                    } else {
+                        selectedLeadIds.delete(cb.dataset.id);
+                    }
+                });
+                updateSelectedCount();
+            }
+
+            function updateSelectedCount() {
+                selectedLeadIds.clear();
+                document.querySelectorAll('.leadCheckbox:checked').forEach(cb => {
+                    selectedLeadIds.add(cb.dataset.id);
+                });
+
+                const count = selectedLeadIds.size;
+                document.getElementById('selectedNum').textContent = count;
+                document.getElementById('selectedCount').style.display = count > 0 ? 'inline-block' : 'none';
+                document.getElementById('bulkStageBtn').style.display = count > 0 ? 'inline-block' : 'none';
+                document.getElementById('bulkDeleteBtn').style.display = count > 0 ? 'inline-block' : 'none';
+
+                // Update select all checkbox
+                const allCheckboxes = document.querySelectorAll('.leadCheckbox');
+                const selectAllCb = document.getElementById('selectAllCheckbox');
+                if (allCheckboxes.length > 0 && count === allCheckboxes.length) {
+                    selectAllCb.checked = true;
+                } else {
+                    selectAllCb.checked = false;
+                }
+            }
+
+            async function bulkDelete() {
+                const count = selectedLeadIds.size;
+                if (count === 0) return;
+
+                if (!confirm(`Delete ${count} selected lead(s)? This cannot be undone.`)) return;
+
+                for (const id of selectedLeadIds) {
+                    await deleteLeadFromDb(id);
+                }
+
+                selectedLeadIds.clear();
+                await loadLeads();
+                renderAllLeads();
+                renderLeads();
+                updateStats();
+            }
+
+            async function bulkChangeStage() {
+                const count = selectedLeadIds.size;
+                if (count === 0) return;
+
+                const stages = ['new', 'contacted', 'scheduled', 'visited', 'negotiating', 'booked', 'lost'];
+                const stageLabels = ['New Lead', 'Contacted', 'Visit Scheduled', 'Visit Done', 'Negotiating', 'Booked', 'Lost'];
+
+                const choice = prompt(
+                    `Change stage for ${count} lead(s) to:\n\n` +
+                    stages.map((s, i) => `${i + 1}. ${stageLabels[i]}`).join('\n') +
+                    `\n\nEnter number (1-7):`
+                );
+
+                const idx = parseInt(choice) - 1;
+                if (isNaN(idx) || idx < 0 || idx >= stages.length) return;
+
+                const newStage = stages[idx];
+
+                for (const id of selectedLeadIds) {
+                    await updateLeadInDb(id, { stage: newStage });
+                }
+
+                selectedLeadIds.clear();
+                await loadLeads();
+                renderAllLeads();
+                renderLeads();
+                updateStats();
+            }
+
+            function exportToCSV() {
+                const leads = getLeads();
+                if (leads.length === 0) {
+                    alert('No leads to export');
+                    return;
+                }
+
+                const headers = ['Name', 'Phone', 'Property', 'Location', 'Budget Min', 'Budget Max', 'Source', 'Stage', 'Score', 'Notes', 'Created At'];
+                const rows = leads.map(l => [
+                    l.name,
+                    l.phone,
+                    l.property || '',
+                    l.location || '',
+                    l.budgetMin || '',
+                    l.budgetMax || '',
+                    l.source || '',
+                    l.stage || '',
+                    l.score || '',
+                    l.notes || '',
+                    l.createdAt ? new Date(l.createdAt).toLocaleDateString() : ''
+                ]);
+
+                const csvContent = [headers, ...rows]
+                    .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+                    .join('\n');
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `leads_export_${new Date().toISOString().split('T')[0]}.csv`;
+                link.click();
+            }
+
+            function sortAllLeads(column) {
+                if (allLeadsSortColumn === column) {
+                    allLeadsSortDirection = allLeadsSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    allLeadsSortColumn = column;
+                    allLeadsSortDirection = 'asc';
+                }
+                allLeadsDisplayed = 0;
+                renderAllLeads();
+            }
+
             // ============ INIT ============
             function initDemoData() {
                 if (localStorage.getItem('leadagent_initialized')) return;
@@ -2100,6 +2399,15 @@
             window.applyFilters = applyFilters;
             window.clearFilters = clearFilters;
             window.editLead = editLead;
+            window.showPage = showPage;
+            window.renderAllLeads = renderAllLeads;
+            window.toggleSelectAll = toggleSelectAll;
+            window.updateSelectedCount = updateSelectedCount;
+            window.bulkDelete = bulkDelete;
+            window.bulkChangeStage = bulkChangeStage;
+            window.exportToCSV = exportToCSV;
+            window.sortAllLeads = sortAllLeads;
+            window.loadMoreLeads = loadMoreLeads;
 
 
             // Initialize app - run immediately if DOM ready, otherwise wait
