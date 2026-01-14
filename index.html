@@ -2262,25 +2262,44 @@
             }
 
             async function bulkDelete() {
+                console.log('[bulkDelete] Called, selectedLeadIds:', selectedLeadIds.size);
                 const count = selectedLeadIds.size;
-                if (count === 0) return;
-
-                if (!confirm(`Delete ${count} selected lead(s)? This cannot be undone.`)) return;
-
-                for (const id of selectedLeadIds) {
-                    await deleteLeadFromDb(id);
+                if (count === 0) {
+                    alert('No leads selected. Please check some boxes first.');
+                    return;
                 }
 
-                selectedLeadIds.clear();
-                await loadLeads();
-                renderAllLeads();
-                renderLeads();
-                updateStats();
+                if (!confirm(`Delete ${count} selected lead(s)? This cannot be undone.`)) {
+                    console.log('[bulkDelete] User cancelled');
+                    return;
+                }
+
+                console.log('[bulkDelete] Deleting leads:', Array.from(selectedLeadIds));
+                try {
+                    for (const id of selectedLeadIds) {
+                        await deleteLeadFromDb(id);
+                    }
+                    console.log('[bulkDelete] Delete complete');
+
+                    selectedLeadIds.clear();
+                    await loadLeads();
+                    renderAllLeads();
+                    renderLeads();
+                    updateStats();
+                    alert('Leads deleted successfully!');
+                } catch (e) {
+                    console.error('[bulkDelete] Error:', e);
+                    alert('Error deleting leads: ' + e.message);
+                }
             }
 
             async function bulkChangeStage() {
+                console.log('[bulkChangeStage] Called, selectedLeadIds:', selectedLeadIds.size);
                 const count = selectedLeadIds.size;
-                if (count === 0) return;
+                if (count === 0) {
+                    alert('No leads selected. Please check some boxes first.');
+                    return;
+                }
 
                 const stages = ['new', 'contacted', 'scheduled', 'visited', 'negotiating', 'booked', 'lost'];
                 const stageLabels = ['New Lead', 'Contacted', 'Visit Scheduled', 'Visit Done', 'Negotiating', 'Booked', 'Lost'];
@@ -2291,20 +2310,32 @@
                     `\n\nEnter number (1-7):`
                 );
 
+                console.log('[bulkChangeStage] User entered:', choice);
                 const idx = parseInt(choice) - 1;
-                if (isNaN(idx) || idx < 0 || idx >= stages.length) return;
-
-                const newStage = stages[idx];
-
-                for (const id of selectedLeadIds) {
-                    await updateLeadInDb(id, { stage: newStage });
+                if (isNaN(idx) || idx < 0 || idx >= stages.length) {
+                    if (choice !== null) alert('Invalid choice. Please enter 1-7.');
+                    return;
                 }
 
-                selectedLeadIds.clear();
-                await loadLeads();
-                renderAllLeads();
-                renderLeads();
-                updateStats();
+                const newStage = stages[idx];
+                console.log('[bulkChangeStage] Changing to:', newStage);
+
+                try {
+                    for (const id of selectedLeadIds) {
+                        await updateLeadInDb(id, { stage: newStage });
+                    }
+                    console.log('[bulkChangeStage] Update complete');
+
+                    selectedLeadIds.clear();
+                    await loadLeads();
+                    renderAllLeads();
+                    renderLeads();
+                    updateStats();
+                    alert(`Stage updated to "${stageLabels[idx]}" for ${count} lead(s)!`);
+                } catch (e) {
+                    console.error('[bulkChangeStage] Error:', e);
+                    alert('Error updating stage: ' + e.message);
+                }
             }
 
             function exportToCSV() {
