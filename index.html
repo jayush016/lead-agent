@@ -2809,9 +2809,9 @@
                 try {
                     for (const id of selectedLeadIds) {
                         await updateLeadInDb(id, {
-                            follow_up_date: date,
-                            follow_up_time: time,
-                            follow_up_note: note || ''
+                            followUpDate: date,
+                            followUpTime: time,
+                            followUpNote: note || ''
                         });
                     }
                     console.log('[bulkScheduleFollowUp] Complete');
@@ -2975,9 +2975,9 @@
 
                 try {
                     await updateLeadInDb(id, {
-                        follow_up_date: null,
-                        follow_up_time: null,
-                        follow_up_note: null
+                        followUpDate: null,
+                        followUpTime: null,
+                        followUpNote: null
                     });
                     await loadLeads();
                     renderFollowupsPage();
@@ -3000,8 +3000,8 @@
 
                 try {
                     await updateLeadInDb(id, {
-                        follow_up_date: date,
-                        follow_up_time: time
+                        followUpDate: date,
+                        followUpTime: time
                     });
                     await loadLeads();
                     renderFollowupsPage();
