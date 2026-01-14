@@ -508,7 +508,7 @@
                 </a>
             </li>
             <li class="nav-item">
-                <a href="#" class="nav-link" onclick="alert('Follow-ups page coming soon!')">
+                <a href="#" class="nav-link" id="navFollowups" onclick="showPage('followups')">
                     <i class="fas fa-calendar-check"></i>
                     Follow-ups
                 </a>
@@ -922,6 +922,60 @@
                 </div>
             </div>
         </div> <!-- End All Leads Page -->
+
+        <!-- Follow-ups Page -->
+        <div id="followupsPage" style="display:none;">
+            <div class="content">
+                <div class="section-header" style="flex-wrap:wrap;gap:12px;">
+                    <h2 class="section-title"><i class="fas fa-calendar-check" style="margin-right:8px;"></i> Follow-ups
+                        <span id="followupsCount"
+                            style="font-size:14px;color:var(--text-secondary);font-weight:400;"></span>
+                    </h2>
+                </div>
+
+                <!-- Stats Row -->
+                <div style="display:flex;gap:16px;margin-bottom:24px;flex-wrap:wrap;">
+                    <div class="stat-card"
+                        style="flex:1;min-width:150px;background:linear-gradient(135deg,#fef2f2,#fee2e2);border-left:4px solid #ef4444;">
+                        <div class="stat-value" id="overdueCount" style="color:#ef4444;">0</div>
+                        <div class="stat-label">Overdue</div>
+                    </div>
+                    <div class="stat-card"
+                        style="flex:1;min-width:150px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border-left:4px solid #f59e0b;">
+                        <div class="stat-value" id="todayCount" style="color:#f59e0b;">0</div>
+                        <div class="stat-label">Due Today</div>
+                    </div>
+                    <div class="stat-card"
+                        style="flex:1;min-width:150px;background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-left:4px solid #10b981;">
+                        <div class="stat-value" id="upcomingCount" style="color:#10b981;">0</div>
+                        <div class="stat-label">Upcoming</div>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+                    <button class="btn" id="tabAll" onclick="setFollowupTab('all')"
+                        style="background:var(--accent);color:white;">All</button>
+                    <button class="btn btn-secondary" id="tabOverdue"
+                        onclick="setFollowupTab('overdue')">Overdue</button>
+                    <button class="btn btn-secondary" id="tabToday" onclick="setFollowupTab('today')">Today</button>
+                    <button class="btn btn-secondary" id="tabUpcoming"
+                        onclick="setFollowupTab('upcoming')">Upcoming</button>
+                </div>
+
+                <!-- Follow-up Cards Container -->
+                <div id="followupCards" class="followup-list">
+                    <!-- Cards rendered by JS -->
+                </div>
+
+                <div id="noFollowups" style="display:none;text-align:center;padding:60px;color:var(--text-secondary);">
+                    <i class="fas fa-calendar-check"
+                        style="font-size:48px;opacity:0.3;margin-bottom:16px;display:block;"></i>
+                    <p>No follow-ups scheduled</p>
+                    <p style="font-size:13px;">Select leads and schedule follow-ups from All Leads page</p>
+                </div>
+            </div>
+        </div> <!-- End Follow-ups Page -->
 
     </main>
 
@@ -2416,19 +2470,26 @@
                 currentPage = page;
                 document.getElementById('dashboardPage').style.display = page === 'dashboard' ? 'block' : 'none';
                 document.getElementById('allLeadsPage').style.display = page === 'allLeads' ? 'block' : 'none';
+                document.getElementById('followupsPage').style.display = page === 'followups' ? 'block' : 'none';
 
                 // Update nav active state
                 document.getElementById('navDashboard').classList.toggle('active', page === 'dashboard');
                 document.getElementById('navAllLeads').classList.toggle('active', page === 'allLeads');
+                document.getElementById('navFollowups').classList.toggle('active', page === 'followups');
 
                 // Update header title
-                document.querySelector('.header-title').textContent = page === 'dashboard' ? 'Dashboard' : 'All Leads';
+                const titles = { 'dashboard': 'Dashboard', 'allLeads': 'All Leads', 'followups': 'Follow-ups' };
+                document.querySelector('.header-title').textContent = titles[page] || 'Dashboard';
 
                 if (page === 'allLeads') {
                     allLeadsDisplayed = 0;
                     selectedLeadIds.clear();
                     populateAllLeadsLocationFilter();
                     filterAllLeads();  // Apply filters and render
+                }
+
+                if (page === 'followups') {
+                    renderFollowupsPage();
                 }
             }
 
@@ -2811,6 +2872,145 @@
                 renderAllLeads();
             }
 
+            // ============ FOLLOW-UPS PAGE ============
+            let followupTab = 'all';
+
+            function renderFollowupsPage() {
+                const leads = getLeads();
+                const today = new Date().toISOString().split('T')[0];
+
+                // Get leads with follow-ups scheduled
+                const leadsWithFollowups = leads.filter(l => l.followUpDate);
+
+                // Categorize
+                const overdue = leadsWithFollowups.filter(l => l.followUpDate < today);
+                const dueToday = leadsWithFollowups.filter(l => l.followUpDate === today);
+                const upcoming = leadsWithFollowups.filter(l => l.followUpDate > today);
+
+                // Update stats
+                document.getElementById('overdueCount').textContent = overdue.length;
+                document.getElementById('todayCount').textContent = dueToday.length;
+                document.getElementById('upcomingCount').textContent = upcoming.length;
+                document.getElementById('followupsCount').textContent = `(${leadsWithFollowups.length} total)`;
+
+                // Filter based on active tab
+                let filteredFollowups = leadsWithFollowups;
+                if (followupTab === 'overdue') filteredFollowups = overdue;
+                else if (followupTab === 'today') filteredFollowups = dueToday;
+                else if (followupTab === 'upcoming') filteredFollowups = upcoming;
+
+                // Sort by date
+                filteredFollowups.sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate));
+
+                // Render cards
+                const container = document.getElementById('followupCards');
+                const noFollowups = document.getElementById('noFollowups');
+
+                if (filteredFollowups.length === 0) {
+                    container.innerHTML = '';
+                    noFollowups.style.display = 'block';
+                } else {
+                    noFollowups.style.display = 'none';
+                    container.innerHTML = filteredFollowups.map(lead => {
+                        const isOverdue = lead.followUpDate < today;
+                        const isToday = lead.followUpDate === today;
+                        const dateLabel = isOverdue ? 'Overdue' : (isToday ? 'Today' : new Date(lead.followUpDate).toLocaleDateString());
+                        const dateClass = isOverdue ? 'color:#ef4444;' : (isToday ? 'color:#f59e0b;' : 'color:#10b981;');
+
+                        return `
+                            <div class="followup-card" style="cursor:default;">
+                                <div class="lead-avatar">${getInitials(lead.name)}</div>
+                                <div style="flex:1;">
+                                    <div style="font-weight:600;font-size:14px;">${lead.name}</div>
+                                    <div style="font-size:12px;color:var(--text-secondary);">+91 ${lead.phone}</div>
+                                    <div style="font-size:12px;color:var(--text-secondary);margin-top:4px;">
+                                        ${lead.followUpNote || 'No note'}
+                                    </div>
+                                </div>
+                                <div style="text-align:right;">
+                                    <div style="font-weight:600;font-size:13px;${dateClass}">${dateLabel}</div>
+                                    <div style="font-size:12px;color:var(--text-secondary);">${lead.followUpTime || '10:00'}</div>
+                                </div>
+                                <div class="followup-actions" style="display:flex;gap:6px;margin-left:16px;">
+                                    <button class="btn btn-sm btn-secondary" onclick="viewLead('${lead.id}')" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <a href="tel:${lead.phone}" class="btn btn-sm btn-secondary" title="Call">
+                                        <i class="fas fa-phone"></i>
+                                    </a>
+                                    <a href="https://wa.me/91${lead.phone}" target="_blank" class="btn btn-sm btn-secondary" style="background:#25D366;border-color:#25D366;color:white;" title="WhatsApp">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-secondary" onclick="rescheduleFollowup('${lead.id}')" title="Reschedule">
+                                        <i class="fas fa-calendar-alt"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-primary" onclick="markFollowupComplete('${lead.id}')" title="Mark Complete">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                }
+            }
+
+            function setFollowupTab(tab) {
+                followupTab = tab;
+
+                // Update tab styles
+                ['All', 'Overdue', 'Today', 'Upcoming'].forEach(t => {
+                    const btn = document.getElementById('tab' + t);
+                    if (btn) {
+                        btn.style.background = tab === t.toLowerCase() ? 'var(--accent)' : 'var(--surface)';
+                        btn.style.color = tab === t.toLowerCase() ? 'white' : 'var(--text-primary)';
+                        btn.className = tab === t.toLowerCase() ? 'btn' : 'btn btn-secondary';
+                    }
+                });
+
+                renderFollowupsPage();
+            }
+
+            async function markFollowupComplete(id) {
+                if (!confirm('Mark this follow-up as complete?')) return;
+
+                try {
+                    await updateLeadInDb(id, {
+                        follow_up_date: null,
+                        follow_up_time: null,
+                        follow_up_note: null
+                    });
+                    await loadLeads();
+                    renderFollowupsPage();
+                    alert('Follow-up marked as complete!');
+                } catch (e) {
+                    alert('Error: ' + e.message);
+                }
+            }
+
+            async function rescheduleFollowup(id) {
+                const leads = getLeads();
+                const lead = leads.find(l => l.id === id);
+                if (!lead) return;
+
+                const date = prompt('New date (YYYY-MM-DD):', lead.followUpDate || new Date().toISOString().split('T')[0]);
+                if (!date) return;
+
+                const time = prompt('New time (HH:MM):', lead.followUpTime || '10:00');
+                if (!time) return;
+
+                try {
+                    await updateLeadInDb(id, {
+                        follow_up_date: date,
+                        follow_up_time: time
+                    });
+                    await loadLeads();
+                    renderFollowupsPage();
+                    alert('Follow-up rescheduled!');
+                } catch (e) {
+                    alert('Error: ' + e.message);
+                }
+            }
+
             // ============ KANBAN VIEW ============
             let allLeadsViewMode = 'table';  // 'table' or 'kanban'
 
@@ -3120,6 +3320,10 @@
             window.kanbanDragOver = kanbanDragOver;
             window.kanbanDragLeave = kanbanDragLeave;
             window.kanbanDrop = kanbanDrop;
+            window.renderFollowupsPage = renderFollowupsPage;
+            window.setFollowupTab = setFollowupTab;
+            window.markFollowupComplete = markFollowupComplete;
+            window.rescheduleFollowup = rescheduleFollowup;
 
 
             // Initialize app - run immediately if DOM ready, otherwise wait
