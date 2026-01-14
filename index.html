@@ -751,10 +751,11 @@
     <div class="modal-overlay" id="addLeadModal">
         <div class="modal">
             <div class="modal-header">
-                <h2>Add New Lead</h2>
+                <h2 id="modalTitle">Add New Lead</h2>
                 <button class="modal-close" onclick="closeModal()">&times;</button>
             </div>
             <form id="addLeadForm" onsubmit="saveLead(event)">
+                <input type="hidden" name="editingId" value="">
                 <div class="modal-body">
                     <div class="form-row">
                         <div class="form-group">
@@ -827,7 +828,8 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> Add Lead</button>
+                    <button type="submit" id="modalSubmitBtn" class="btn btn-primary"><i class="fas fa-plus"></i> Add
+                        Lead</button>
                 </div>
             </form>
         </div>
@@ -837,7 +839,12 @@
     <div class="panel-overlay" id="leadPanel" onclick="if(event.target===this) closePanel()">
         <div class="panel">
             <div class="panel-header">
-                <h2 id="panelTitle">Lead Details</h2>
+                <div style="display:flex;align-items:center;gap:12px;">
+                    <h2 id="panelTitle">Lead Details</h2>
+                    <button id="panelEditBtn" class="btn btn-secondary"
+                        style="padding:6px 12px;font-size:13px;display:none;" onclick="editLead(currentLeadId)"><i
+                            class="fas fa-edit"></i> Edit</button>
+                </div>
                 <button class="modal-close" onclick="closePanel()">&times;</button>
             </div>
             <div class="panel-body" id="panelBody">
@@ -1636,6 +1643,36 @@
             function closeModal() {
                 document.getElementById('addLeadModal').classList.remove('active');
                 document.getElementById('addLeadForm').reset();
+                // Reset to "Add" mode
+                document.getElementById('modalTitle').textContent = 'Add New Lead';
+                document.getElementById('modalSubmitBtn').innerHTML = '<i class="fas fa-plus"></i> Add Lead';
+                document.querySelector('[name="editingId"]').value = '';
+            }
+
+            function editLead(id) {
+                const lead = getLeads().find(l => l.id === id);
+                if (!lead) return;
+
+                // Close panel and open modal
+                closePanel();
+
+                // Fill form with lead data
+                const form = document.getElementById('addLeadForm');
+                form.name.value = lead.name || '';
+                form.phone.value = lead.phone?.replace('+91 ', '').replace(/\s/g, '') || '';
+                form.property.value = lead.property || '';
+                form.location.value = lead.location || '';
+                form.budgetMin.value = lead.budgetMin || '';
+                form.budgetMax.value = lead.budgetMax || '';
+                form.source.value = lead.source || 'Walk-in';
+                form.notes.value = lead.notes || '';
+
+                // Set edit mode
+                document.querySelector('[name="editingId"]').value = id;
+                document.getElementById('modalTitle').textContent = 'Edit Lead';
+                document.getElementById('modalSubmitBtn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
+
+                openModal();
             }
 
             // ============ PANEL ============
@@ -1765,6 +1802,7 @@
             `;
 
                 openPanel();
+                document.getElementById('panelEditBtn').style.display = 'inline-flex';
             }
 
             function logInteraction(id, type, desc) {
@@ -1830,7 +1868,9 @@
             async function saveLead(e) {
                 e.preventDefault();
                 const form = e.target;
-                const lead = {
+                const editingId = form.editingId.value;
+
+                const leadData = {
                     name: form.name.value,
                     phone: form.phone.value,
                     property: form.property.value || '-',
@@ -1838,13 +1878,29 @@
                     budgetMin: parseInt(form.budgetMin.value) || 0,
                     budgetMax: parseInt(form.budgetMax.value) || 0,
                     source: form.source.value,
-                    notes: form.notes.value,
-                    stage: 'new',
-                    score: Math.floor(Math.random() * 30) + 50,
-                    createdAt: new Date().toISOString()
+                    notes: form.notes.value
                 };
 
-                await saveLeadToDb(lead);
+                if (editingId) {
+                    // Edit mode - update existing lead
+                    await updateLeadInDb(editingId, {
+                        name: leadData.name,
+                        phone: leadData.phone,
+                        property: leadData.property,
+                        location: leadData.location,
+                        budget_min: leadData.budgetMin,
+                        budget_max: leadData.budgetMax,
+                        source: leadData.source,
+                        notes: leadData.notes
+                    });
+                } else {
+                    // Add mode - create new lead
+                    leadData.stage = 'new';
+                    leadData.score = Math.floor(Math.random() * 30) + 50;
+                    leadData.createdAt = new Date().toISOString();
+                    await saveLeadToDb(leadData);
+                }
+
                 await loadLeads();
                 closeModal();
                 renderLeads();
@@ -2010,6 +2066,7 @@
             window.closeFilterPanel = closeFilterPanel;
             window.applyFilters = applyFilters;
             window.clearFilters = clearFilters;
+            window.editLead = editLead;
 
 
             // Initialize app - run immediately if DOM ready, otherwise wait
