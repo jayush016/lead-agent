@@ -1079,6 +1079,30 @@
                         <canvas id="growthChart"></canvas>
                     </div>
                 </div>
+
+                <!-- Charts Row 3 (Actionable Insights) -->
+                <div style="display:flex;gap:24px;margin-bottom:24px;flex-wrap:wrap;">
+                    <div
+                        style="flex:1;min-width:300px;background:white;padding:24px;border-radius:12px;box-shadow:var(--shadow);">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                            <h3 style="font-size:16px;font-weight:600;">Marketing ROI (Lead Quality)</h3>
+                            <span
+                                style="font-size:11px;background:#f0f9ff;color:#0284c7;padding:4px 8px;border-radius:4px;">Volume
+                                vs Conversion</span>
+                        </div>
+                        <div style="height:300px;">
+                            <canvas id="sourceQualityChart"></canvas>
+                        </div>
+                    </div>
+                    <div
+                        style="flex:1;min-width:300px;background:white;padding:24px;border-radius:12px;box-shadow:var(--shadow);">
+                        <h3 style="font-size:16px;font-weight:600;margin-bottom:16px;">Top Performing Locations</h3>
+                        <div style="height:300px;">
+                            <canvas id="locationPerformanceChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div> <!-- End Analytics Page -->
 
@@ -3281,6 +3305,83 @@
                         maintainAspectRatio: false,
                         scales: {
                             y: { beginAtZero: true, ticks: { stepSize: 1 } }
+                        }
+                    }
+                });
+
+                // 5. Marketing ROI (Lead Quality)
+                // Source vs (Booked + Negotiating)
+                const sources = [...new Set(leads.map(l => (l.source || 'Unknown').trim()))];
+                const totalBySource = sources.map(s => leads.filter(l => (l.source || 'Unknown').trim() === s).length);
+                const qualityBySource = sources.map(s => leads.filter(l => {
+                    const src = (l.source || 'Unknown').trim();
+                    const stage = (l.stage || '').toLowerCase();
+                    const isQuality = stage === 'booked' || stage === 'negotiating' || stage === 'visited';
+                    return src === s && isQuality;
+                }).length);
+
+                const ctxQuality = document.getElementById('sourceQualityChart').getContext('2d');
+                if (window.qualityChartInstance) window.qualityChartInstance.destroy();
+
+                window.qualityChartInstance = new Chart(ctxQuality, {
+                    type: 'bar',
+                    data: {
+                        labels: sources,
+                        datasets: [
+                            {
+                                label: 'Total Leads',
+                                data: totalBySource,
+                                backgroundColor: '#e2e8f0',
+                                borderRadius: 4
+                            },
+                            {
+                                label: 'High Potential (Visited+)',
+                                data: qualityBySource,
+                                backgroundColor: '#10b981',
+                                borderRadius: 4
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { display: false } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // 6. Location Performance
+                const locations = [...new Set(leads.filter(l => l.location).map(l => l.location))];
+                // Sort by number of booked deals desc
+                const locData = locations.map(loc => {
+                    const total = leads.filter(l => l.location === loc).length;
+                    const booked = leads.filter(l => l.location === loc && (l.stage === 'booked' || l.stage === 'Booked')).length;
+                    return { loc, total, booked };
+                }).sort((a, b) => b.booked - a.booked).slice(0, 5); // Top 5
+
+                const ctxLoc = document.getElementById('locationPerformanceChart').getContext('2d');
+                if (window.locationChartInstance) window.locationChartInstance.destroy();
+
+                window.locationChartInstance = new Chart(ctxLoc, {
+                    type: 'bar',
+                    indexAxis: 'y',
+                    data: {
+                        labels: locData.map(d => d.loc),
+                        datasets: [{
+                            label: 'Booked Deals',
+                            data: locData.map(d => d.booked),
+                            backgroundColor: '#8b5cf6',
+                            barThickness: 20
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        indexAxis: 'y',
+                        scales: {
+                            x: { beginAtZero: true, ticks: { stepSize: 1 } }
                         }
                     }
                 });
