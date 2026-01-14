@@ -1374,170 +1374,172 @@
     </style>
 
     <script>
+        console.log('[Lead Agent] Script started');
 
-        // ============ SUPABASE CONFIG ============
-        const SUPABASE_URL = 'https://vzjtedsejavynflitacw.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6anRlZHNlamF2eW5mbGl0YWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMzQ2MTQsImV4cCI6MjA4MzgxMDYxNH0.CqOVSgXNLjvFRRgZ0ow6RAH6bSYwnuUZ59VtFp-bmZw';
+        try {
+            // ============ SUPABASE CONFIG ============
+            const SUPABASE_URL = 'https://vzjtedsejavynflitacw.supabase.co';
+            const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6anRlZHNlamF2eW5mbGl0YWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMzQ2MTQsImV4cCI6MjA4MzgxMDYxNH0.CqOVSgXNLjvFRRgZ0ow6RAH6bSYwnuUZ59VtFp-bmZw';
 
-        // Check if Supabase loaded
-        if (!window.supabase) {
-            console.error('Supabase library not loaded!');
-        }
-        const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+            // Check if Supabase loaded
+            if (!window.supabase) {
+                console.error('[Lead Agent] Supabase library not loaded!');
+            }
+            const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+            console.log('[Lead Agent] Supabase client:', supabase ? 'OK' : 'NULL');
+
+            // ============ DATA LAYER ============
+            const STORAGE_KEY = 'leadagent_leads';
+            let leadsCache = []; // In-memory cache for faster access
 
 
-        // ============ DATA LAYER ============
-        const STORAGE_KEY = 'leadagent_leads';
-        let leadsCache = []; // In-memory cache for faster access
+            // Load leads from Supabase (with localStorage fallback)
+            async function loadLeads() {
+                try {
+                    const { data, error } = await supabase
+                        .from('leads')
+                        .select('*, activities(*)')
+                        .order('created_at', { ascending: false });
 
+                    if (error) throw error;
 
-        // Load leads from Supabase (with localStorage fallback)
-        async function loadLeads() {
-            try {
-                const { data, error } = await supabase
-                    .from('leads')
-                    .select('*, activities(*)')
-                    .order('created_at', { ascending: false });
+                    // Transform data to match our frontend structure
+                    leadsCache = data.map(lead => ({
+                        id: lead.id,
+                        name: lead.name,
+                        phone: lead.phone,
+                        property: lead.property || '-',
+                        location: lead.location || '-',
+                        budgetMin: lead.budget_min || 0,
+                        budgetMax: lead.budget_max || 0,
+                        source: lead.source,
+                        stage: lead.stage || 'new',
+                        score: lead.score || 50,
+                        notes: lead.notes,
+                        createdAt: lead.created_at,
+                        followUpDate: lead.follow_up_date,
+                        followUpTime: lead.follow_up_time,
+                        followUpNote: lead.follow_up_note,
+                        activities: (lead.activities || []).map(a => ({
+                            type: a.type,
+                            description: a.description,
+                            timestamp: a.created_at
+                        }))
+                    }));
 
-                if (error) throw error;
+                    console.log('✅ Loaded from Supabase:', leadsCache.length, 'leads');
+                    return leadsCache;
+                } catch (err) {
+                    console.warn('⚠️ Supabase unavailable, using localStorage:', err.message);
+                    leadsCache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                    return leadsCache;
+                }
+            }
 
-                // Transform data to match our frontend structure
-                leadsCache = data.map(lead => ({
-                    id: lead.id,
-                    name: lead.name,
-                    phone: lead.phone,
-                    property: lead.property || '-',
-                    location: lead.location || '-',
-                    budgetMin: lead.budget_min || 0,
-                    budgetMax: lead.budget_max || 0,
-                    source: lead.source,
-                    stage: lead.stage || 'new',
-                    score: lead.score || 50,
-                    notes: lead.notes,
-                    createdAt: lead.created_at,
-                    followUpDate: lead.follow_up_date,
-                    followUpTime: lead.follow_up_time,
-                    followUpNote: lead.follow_up_note,
-                    activities: (lead.activities || []).map(a => ({
-                        type: a.type,
-                        description: a.description,
-                        timestamp: a.created_at
-                    }))
-                }));
-
-                console.log('✅ Loaded from Supabase:', leadsCache.length, 'leads');
+            function getLeads() {
                 return leadsCache;
-            } catch (err) {
-                console.warn('⚠️ Supabase unavailable, using localStorage:', err.message);
-                leadsCache = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                return leadsCache;
-            }
-        }
-
-        function getLeads() {
-            return leadsCache;
-        }
-
-        async function saveLeadToDb(lead) {
-            try {
-                const dbLead = {
-                    name: lead.name,
-                    phone: lead.phone,
-                    property: lead.property,
-                    location: lead.location,
-                    budget_min: lead.budgetMin,
-                    budget_max: lead.budgetMax,
-                    source: lead.source,
-                    stage: lead.stage,
-                    score: lead.score,
-                    notes: lead.notes
-                };
-
-                const { data, error } = await supabase
-                    .from('leads')
-                    .insert([dbLead])
-                    .select()
-                    .single();
-
-                if (error) throw error;
-                console.log('✅ Saved to Supabase:', data.id);
-                return data;
-            } catch (err) {
-                console.warn('⚠️ Supabase save failed, using localStorage:', err.message);
-                // Fallback to localStorage
-                const leads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-                lead.id = Date.now();
-                leads.unshift(lead);
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-                return lead;
-            }
-        }
-
-        async function updateLeadInDb(id, updates) {
-            try {
-                const dbUpdates = {};
-                if (updates.stage) dbUpdates.stage = updates.stage;
-                if (updates.score !== undefined) dbUpdates.score = updates.score;
-                if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
-                if (updates.followUpDate !== undefined) dbUpdates.follow_up_date = updates.followUpDate;
-                if (updates.followUpTime !== undefined) dbUpdates.follow_up_time = updates.followUpTime;
-                if (updates.followUpNote !== undefined) dbUpdates.follow_up_note = updates.followUpNote;
-                dbUpdates.updated_at = new Date().toISOString();
-
-                const { error } = await supabase
-                    .from('leads')
-                    .update(dbUpdates)
-                    .eq('id', id);
-
-                if (error) throw error;
-                console.log('✅ Updated in Supabase:', id);
-            } catch (err) {
-                console.warn('⚠️ Supabase update failed:', err.message);
-            }
-        }
-
-        async function scheduleFollowUp(id) {
-            const lead = getLeads().find(l => l.id === id);
-            if (!lead) return;
-
-            const today = new Date().toISOString().split('T')[0];
-            const dateInput = prompt('Follow-up Date (YYYY-MM-DD):', lead.followUpDate || today);
-            if (!dateInput) return;
-
-            const timeInput = prompt('Follow-up Time (HH:MM):', lead.followUpTime || '10:00');
-            if (!timeInput) return;
-
-            const noteInput = prompt('Follow-up Note (optional):', lead.followUpNote || 'Follow-up call');
-
-            await updateLeadInDb(id, {
-                followUpDate: dateInput,
-                followUpTime: timeInput,
-                followUpNote: noteInput || ''
-            });
-
-            await addActivityToDb(id, 'followup', `Follow-up scheduled for ${dateInput} at ${timeInput}`);
-            await loadLeads();
-            renderFollowups();
-            viewLead(id);
-        }
-
-        function renderFollowups() {
-            const today = new Date().toISOString().split('T')[0];
-            const followups = getLeads().filter(l => l.followUpDate === today);
-
-            const section = document.getElementById('followupsSection');
-            const list = document.getElementById('followupList');
-            const countEl = document.getElementById('followupCount');
-
-            countEl.textContent = followups.length;
-
-            if (followups.length === 0) {
-                section.style.display = 'none';
-                return;
             }
 
-            section.style.display = 'block';
-            list.innerHTML = followups.map(lead => `
+            async function saveLeadToDb(lead) {
+                try {
+                    const dbLead = {
+                        name: lead.name,
+                        phone: lead.phone,
+                        property: lead.property,
+                        location: lead.location,
+                        budget_min: lead.budgetMin,
+                        budget_max: lead.budgetMax,
+                        source: lead.source,
+                        stage: lead.stage,
+                        score: lead.score,
+                        notes: lead.notes
+                    };
+
+                    const { data, error } = await supabase
+                        .from('leads')
+                        .insert([dbLead])
+                        .select()
+                        .single();
+
+                    if (error) throw error;
+                    console.log('✅ Saved to Supabase:', data.id);
+                    return data;
+                } catch (err) {
+                    console.warn('⚠️ Supabase save failed, using localStorage:', err.message);
+                    // Fallback to localStorage
+                    const leads = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+                    lead.id = Date.now();
+                    leads.unshift(lead);
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+                    return lead;
+                }
+            }
+
+            async function updateLeadInDb(id, updates) {
+                try {
+                    const dbUpdates = {};
+                    if (updates.stage) dbUpdates.stage = updates.stage;
+                    if (updates.score !== undefined) dbUpdates.score = updates.score;
+                    if (updates.notes !== undefined) dbUpdates.notes = updates.notes;
+                    if (updates.followUpDate !== undefined) dbUpdates.follow_up_date = updates.followUpDate;
+                    if (updates.followUpTime !== undefined) dbUpdates.follow_up_time = updates.followUpTime;
+                    if (updates.followUpNote !== undefined) dbUpdates.follow_up_note = updates.followUpNote;
+                    dbUpdates.updated_at = new Date().toISOString();
+
+                    const { error } = await supabase
+                        .from('leads')
+                        .update(dbUpdates)
+                        .eq('id', id);
+
+                    if (error) throw error;
+                    console.log('✅ Updated in Supabase:', id);
+                } catch (err) {
+                    console.warn('⚠️ Supabase update failed:', err.message);
+                }
+            }
+
+            async function scheduleFollowUp(id) {
+                const lead = getLeads().find(l => l.id === id);
+                if (!lead) return;
+
+                const today = new Date().toISOString().split('T')[0];
+                const dateInput = prompt('Follow-up Date (YYYY-MM-DD):', lead.followUpDate || today);
+                if (!dateInput) return;
+
+                const timeInput = prompt('Follow-up Time (HH:MM):', lead.followUpTime || '10:00');
+                if (!timeInput) return;
+
+                const noteInput = prompt('Follow-up Note (optional):', lead.followUpNote || 'Follow-up call');
+
+                await updateLeadInDb(id, {
+                    followUpDate: dateInput,
+                    followUpTime: timeInput,
+                    followUpNote: noteInput || ''
+                });
+
+                await addActivityToDb(id, 'followup', `Follow-up scheduled for ${dateInput} at ${timeInput}`);
+                await loadLeads();
+                renderFollowups();
+                viewLead(id);
+            }
+
+            function renderFollowups() {
+                const today = new Date().toISOString().split('T')[0];
+                const followups = getLeads().filter(l => l.followUpDate === today);
+
+                const section = document.getElementById('followupsSection');
+                const list = document.getElementById('followupList');
+                const countEl = document.getElementById('followupCount');
+
+                countEl.textContent = followups.length;
+
+                if (followups.length === 0) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                section.style.display = 'block';
+                list.innerHTML = followups.map(lead => `
                 <div class="followup-card" onclick="viewLead('${lead.id}')">
                     <div class="lead-avatar">${getInitials(lead.name)}</div>
                     <div class="followup-info">
@@ -1551,156 +1553,156 @@
                     </div>
                 </div>
             `).join('');
-        }
-
-        async function addActivityToDb(leadId, type, description) {
-            try {
-                const { error } = await supabase
-                    .from('activities')
-                    .insert([{ lead_id: leadId, type, description }]);
-
-                if (error) throw error;
-            } catch (err) {
-                console.warn('⚠️ Activity save failed:', err.message);
             }
-        }
 
-        async function deleteLeadFromDb(id) {
-            try {
-                const { error } = await supabase
-                    .from('leads')
-                    .delete()
-                    .eq('id', id);
+            async function addActivityToDb(leadId, type, description) {
+                try {
+                    const { error } = await supabase
+                        .from('activities')
+                        .insert([{ lead_id: leadId, type, description }]);
 
-                if (error) throw error;
-                console.log('✅ Deleted from Supabase:', id);
-            } catch (err) {
-                console.warn('⚠️ Supabase delete failed:', err.message);
+                    if (error) throw error;
+                } catch (err) {
+                    console.warn('⚠️ Activity save failed:', err.message);
+                }
             }
-        }
 
-        // Legacy function for compatibility
-        function saveLeads(leads) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
-            leadsCache = leads;
-        }
+            async function deleteLeadFromDb(id) {
+                try {
+                    const { error } = await supabase
+                        .from('leads')
+                        .delete()
+                        .eq('id', id);
 
-        function getInitials(name) {
-            return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
-        }
+                    if (error) throw error;
+                    console.log('✅ Deleted from Supabase:', id);
+                } catch (err) {
+                    console.warn('⚠️ Supabase delete failed:', err.message);
+                }
+            }
 
-        function formatBudget(min, max) {
-            if (!min && !max) return '-';
-            if (min >= 100) min = (min / 100).toFixed(1) + 'Cr';
-            else if (min) min = min + 'L';
-            if (max >= 100) max = (max / 100).toFixed(1) + 'Cr';
-            else if (max) max = max + 'L';
-            if (min && max) return `₹${min} - ${max}`;
-            if (max) return `Up to ₹${max}`;
-            return `₹${min}+`;
-        }
+            // Legacy function for compatibility
+            function saveLeads(leads) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(leads));
+                leadsCache = leads;
+            }
 
-        function timeAgo(dateStr) {
-            const diff = Date.now() - new Date(dateStr).getTime();
-            const mins = Math.floor(diff / 60000);
-            if (mins < 1) return 'Just now';
-            if (mins < 60) return `${mins}m ago`;
-            const hrs = Math.floor(mins / 60);
-            if (hrs < 24) return `${hrs}h ago`;
-            const days = Math.floor(hrs / 24);
-            if (days < 7) return `${days}d ago`;
-            return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
-        }
+            function getInitials(name) {
+                return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+            }
 
-        function logActivity(leadId, type, description) {
-            const leads = getLeads();
-            const idx = leads.findIndex(l => l.id === leadId);
-            if (idx === -1) return;
+            function formatBudget(min, max) {
+                if (!min && !max) return '-';
+                if (min >= 100) min = (min / 100).toFixed(1) + 'Cr';
+                else if (min) min = min + 'L';
+                if (max >= 100) max = (max / 100).toFixed(1) + 'Cr';
+                else if (max) max = max + 'L';
+                if (min && max) return `₹${min} - ${max}`;
+                if (max) return `Up to ₹${max}`;
+                return `₹${min}+`;
+            }
 
-            if (!leads[idx].activities) leads[idx].activities = [];
-            leads[idx].activities.unshift({
-                type: type,
-                description: description,
-                timestamp: new Date().toISOString()
-            });
-            saveLeads(leads);
-        }
+            function timeAgo(dateStr) {
+                const diff = Date.now() - new Date(dateStr).getTime();
+                const mins = Math.floor(diff / 60000);
+                if (mins < 1) return 'Just now';
+                if (mins < 60) return `${mins}m ago`;
+                const hrs = Math.floor(mins / 60);
+                if (hrs < 24) return `${hrs}h ago`;
+                const days = Math.floor(hrs / 24);
+                if (days < 7) return `${days}d ago`;
+                return new Date(dateStr).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
+            }
 
-        // ============ MODAL ============
-        function openModal() {
-            document.getElementById('addLeadModal').classList.add('active');
-        }
+            function logActivity(leadId, type, description) {
+                const leads = getLeads();
+                const idx = leads.findIndex(l => l.id === leadId);
+                if (idx === -1) return;
 
-        function closeModal() {
-            document.getElementById('addLeadModal').classList.remove('active');
-            document.getElementById('addLeadForm').reset();
-        }
+                if (!leads[idx].activities) leads[idx].activities = [];
+                leads[idx].activities.unshift({
+                    type: type,
+                    description: description,
+                    timestamp: new Date().toISOString()
+                });
+                saveLeads(leads);
+            }
 
-        // ============ PANEL ============
-        let currentLeadId = null;
-        const stageLabels = {
-            'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
-            'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
-        };
+            // ============ MODAL ============
+            function openModal() {
+                document.getElementById('addLeadModal').classList.add('active');
+            }
 
-        function openPanel() {
-            document.getElementById('leadPanel').classList.add('active');
-        }
+            function closeModal() {
+                document.getElementById('addLeadModal').classList.remove('active');
+                document.getElementById('addLeadForm').reset();
+            }
 
-        function closePanel() {
-            document.getElementById('leadPanel').classList.remove('active');
-            currentLeadId = null;
-        }
-
-        // ============ FILTER PANEL ============
-        function openFilterPanel() {
-            document.getElementById('filterPanel').classList.add('active');
-        }
-
-        function closeFilterPanel() {
-            document.getElementById('filterPanel').classList.remove('active');
-        }
-
-        function applyFilters() {
-            closeFilterPanel();
-            renderLeads();
-        }
-
-        function clearFilters() {
-            document.getElementById('filterStage').value = '';
-            document.getElementById('filterLocation').value = '';
-            document.getElementById('filterProperty').value = '';
-            document.getElementById('filterBudgetMin').value = '';
-            document.getElementById('filterBudgetMax').value = '';
-            document.getElementById('filterScore').value = '';
-            document.getElementById('filterSource').value = '';
-            renderLeads();
-        }
-
-        function viewLead(id) {
-            const leads = getLeads();
-            const lead = leads.find(l => l.id === id);
-            if (!lead) return;
-
-            currentLeadId = id;
-            document.getElementById('panelTitle').textContent = lead.name;
-
-            const createdDate = new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-
-            // Build activities array (include creation as first event)
-            const activities = lead.activities || [];
-            const allEvents = [
-                ...activities,
-                { type: 'created', description: `Lead created from ${lead.source || 'unknown source'}`, timestamp: lead.createdAt }
-            ];
-
-            const activityIcons = {
-                'stage_change': 'fa-arrow-right', 'call': 'fa-phone', 'whatsapp': 'fa-whatsapp',
-                'note': 'fa-sticky-note', 'meeting': 'fa-handshake', 'created': 'fa-plus-circle',
-                'followup': 'fa-clock'
+            // ============ PANEL ============
+            let currentLeadId = null;
+            const stageLabels = {
+                'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
+                'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
             };
 
-            const timelineHtml = allEvents.length > 0 ? allEvents.map(a => `
+            function openPanel() {
+                document.getElementById('leadPanel').classList.add('active');
+            }
+
+            function closePanel() {
+                document.getElementById('leadPanel').classList.remove('active');
+                currentLeadId = null;
+            }
+
+            // ============ FILTER PANEL ============
+            function openFilterPanel() {
+                document.getElementById('filterPanel').classList.add('active');
+            }
+
+            function closeFilterPanel() {
+                document.getElementById('filterPanel').classList.remove('active');
+            }
+
+            function applyFilters() {
+                closeFilterPanel();
+                renderLeads();
+            }
+
+            function clearFilters() {
+                document.getElementById('filterStage').value = '';
+                document.getElementById('filterLocation').value = '';
+                document.getElementById('filterProperty').value = '';
+                document.getElementById('filterBudgetMin').value = '';
+                document.getElementById('filterBudgetMax').value = '';
+                document.getElementById('filterScore').value = '';
+                document.getElementById('filterSource').value = '';
+                renderLeads();
+            }
+
+            function viewLead(id) {
+                const leads = getLeads();
+                const lead = leads.find(l => l.id === id);
+                if (!lead) return;
+
+                currentLeadId = id;
+                document.getElementById('panelTitle').textContent = lead.name;
+
+                const createdDate = new Date(lead.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+
+                // Build activities array (include creation as first event)
+                const activities = lead.activities || [];
+                const allEvents = [
+                    ...activities,
+                    { type: 'created', description: `Lead created from ${lead.source || 'unknown source'}`, timestamp: lead.createdAt }
+                ];
+
+                const activityIcons = {
+                    'stage_change': 'fa-arrow-right', 'call': 'fa-phone', 'whatsapp': 'fa-whatsapp',
+                    'note': 'fa-sticky-note', 'meeting': 'fa-handshake', 'created': 'fa-plus-circle',
+                    'followup': 'fa-clock'
+                };
+
+                const timelineHtml = allEvents.length > 0 ? allEvents.map(a => `
                 <div class="timeline-item">
                     <div class="timeline-icon"><i class="fas ${activityIcons[a.type] || 'fa-circle'}"></i></div>
                     <div class="timeline-content">
@@ -1710,13 +1712,13 @@
                 </div>
             `).join('') : '<div style="color:var(--text-secondary);font-size:13px;">No activity yet</div>';
 
-            document.getElementById('panelBody').innerHTML = `
+                document.getElementById('panelBody').innerHTML = `
                 <div class="detail-section">
                     <h3>Stage</h3>
                     <select class="stage-select" onchange="changeStage('${id}', this.value)">
                         ${Object.entries(stageLabels).map(([k, v]) =>
-                `<option value="${k}" ${lead.stage === k ? 'selected' : ''}>${v}</option>`
-            ).join('')}
+                    `<option value="${k}" ${lead.stage === k ? 'selected' : ''}>${v}</option>`
+                ).join('')}
                     </select>
                 </div>
                 
@@ -1762,168 +1764,168 @@
                 </div>
             `;
 
-            openPanel();
-        }
-
-        function logInteraction(id, type, desc) {
-            const leads = getLeads();
-            const idx = leads.findIndex(l => l.id === id);
-            if (idx === -1) return;
-
-            if (!leads[idx].activities) leads[idx].activities = [];
-            leads[idx].activities.unshift({
-                type: type,
-                description: desc,
-                timestamp: new Date().toISOString()
-            });
-            saveLeads(leads);
-        }
-
-        function showLogForm(id) {
-            const desc = prompt('What did you do? (e.g., "Called - not reachable", "Site visit scheduled for tomorrow")');
-            if (!desc) return;
-
-            const leads = getLeads();
-            const idx = leads.findIndex(l => l.id === id);
-            if (idx === -1) return;
-
-            if (!leads[idx].activities) leads[idx].activities = [];
-            leads[idx].activities.unshift({
-                type: 'note',
-                description: desc,
-                timestamp: new Date().toISOString()
-            });
-            saveLeads(leads);
-            viewLead(id);
-        }
-
-        async function changeStage(id, newStage) {
-            const leads = getLeads();
-            const lead = leads.find(l => l.id === id);
-            if (!lead) return;
-
-            const oldStage = lead.stage;
-            const description = `Stage changed from ${stageLabels[oldStage] || 'New Lead'} to ${stageLabels[newStage]}`;
-
-            // Update in database
-            await updateLeadInDb(id, { stage: newStage });
-            await addActivityToDb(id, 'stage_change', description);
-
-            // Reload and refresh UI
-            await loadLeads();
-            renderLeads();
-            viewLead(id);
-        }
-
-        async function deleteLead(id) {
-            if (!confirm('Delete this lead permanently?')) return;
-            await deleteLeadFromDb(id);
-            await loadLeads();
-            closePanel();
-            renderLeads();
-            updateStats();
-        }
-
-        // ============ SAVE LEAD ============
-        async function saveLead(e) {
-            e.preventDefault();
-            const form = e.target;
-            const lead = {
-                name: form.name.value,
-                phone: form.phone.value,
-                property: form.property.value || '-',
-                location: form.location.value || '-',
-                budgetMin: parseInt(form.budgetMin.value) || 0,
-                budgetMax: parseInt(form.budgetMax.value) || 0,
-                source: form.source.value,
-                notes: form.notes.value,
-                stage: 'new',
-                score: Math.floor(Math.random() * 30) + 50,
-                createdAt: new Date().toISOString()
-            };
-
-            await saveLeadToDb(lead);
-            await loadLeads();
-            closeModal();
-            renderLeads();
-            updateStats();
-        }
-
-        // ============ RENDER ============
-        function renderLeads() {
-            const tbody = document.querySelector('.table tbody');
-            const allLeads = getLeads();
-
-            // Get filter values
-            const filterStage = document.getElementById('filterStage')?.value || '';
-            const filterLocation = document.getElementById('filterLocation')?.value || '';
-            const filterProperty = document.getElementById('filterProperty')?.value || '';
-            const filterBudgetMin = parseInt(document.getElementById('filterBudgetMin')?.value) || 0;
-            const filterBudgetMax = parseInt(document.getElementById('filterBudgetMax')?.value) || 0;
-            const filterScore = document.getElementById('filterScore')?.value || '';
-            const filterSource = document.getElementById('filterSource')?.value || '';
-            const searchTerm = document.querySelector('.search-input')?.value?.toLowerCase() || '';
-
-            // Filter leads
-            let leads = allLeads;
-            if (filterStage) {
-                leads = leads.filter(l => l.stage === filterStage);
-            }
-            if (filterLocation) {
-                leads = leads.filter(l => l.location === filterLocation);
-            }
-            if (filterProperty) {
-                leads = leads.filter(l => l.property === filterProperty);
-            }
-            if (filterBudgetMin > 0) {
-                leads = leads.filter(l => l.budgetMax >= filterBudgetMin);
-            }
-            if (filterBudgetMax > 0) {
-                leads = leads.filter(l => l.budgetMin <= filterBudgetMax);
-            }
-            if (filterScore === 'hot') {
-                leads = leads.filter(l => l.score >= 70);
-            } else if (filterScore === 'warm') {
-                leads = leads.filter(l => l.score >= 50 && l.score < 70);
-            } else if (filterScore === 'cold') {
-                leads = leads.filter(l => l.score < 50);
-            }
-            if (filterSource) {
-                leads = leads.filter(l => l.source === filterSource);
-            }
-            if (searchTerm) {
-                leads = leads.filter(l =>
-                    l.name.toLowerCase().includes(searchTerm) ||
-                    l.phone.includes(searchTerm) ||
-                    l.location?.toLowerCase().includes(searchTerm)
-                );
+                openPanel();
             }
 
-            if (leads.length === 0) {
-                const msg = allLeads.length === 0
-                    ? 'No leads yet. Click "Add New Lead" to get started!'
-                    : 'No leads match your filters.';
-                tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary);">${msg}</td></tr>`;
-                return;
+            function logInteraction(id, type, desc) {
+                const leads = getLeads();
+                const idx = leads.findIndex(l => l.id === id);
+                if (idx === -1) return;
+
+                if (!leads[idx].activities) leads[idx].activities = [];
+                leads[idx].activities.unshift({
+                    type: type,
+                    description: desc,
+                    timestamp: new Date().toISOString()
+                });
+                saveLeads(leads);
             }
 
-            const stageLabels = {
-                'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
-                'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
-            };
+            function showLogForm(id) {
+                const desc = prompt('What did you do? (e.g., "Called - not reachable", "Site visit scheduled for tomorrow")');
+                if (!desc) return;
 
-            function getRemarks(lead) {
-                // Show recent activity or notes as quick status
-                const latest = lead.activities && lead.activities[0];
-                if (lead.stage === 'booked') return '🎉 Token received';
-                if (lead.stage === 'scheduled' && latest) return latest.description.slice(0, 20) + '...';
-                if (lead.stage === 'lost') return '❌ Lost';
-                if (latest) return latest.description.length > 20 ? latest.description.slice(0, 18) + '...' : latest.description;
-                if (lead.notes) return lead.notes.length > 20 ? lead.notes.slice(0, 18) + '...' : lead.notes;
-                return '-';
+                const leads = getLeads();
+                const idx = leads.findIndex(l => l.id === id);
+                if (idx === -1) return;
+
+                if (!leads[idx].activities) leads[idx].activities = [];
+                leads[idx].activities.unshift({
+                    type: 'note',
+                    description: desc,
+                    timestamp: new Date().toISOString()
+                });
+                saveLeads(leads);
+                viewLead(id);
             }
 
-            tbody.innerHTML = leads.map(lead => `
+            async function changeStage(id, newStage) {
+                const leads = getLeads();
+                const lead = leads.find(l => l.id === id);
+                if (!lead) return;
+
+                const oldStage = lead.stage;
+                const description = `Stage changed from ${stageLabels[oldStage] || 'New Lead'} to ${stageLabels[newStage]}`;
+
+                // Update in database
+                await updateLeadInDb(id, { stage: newStage });
+                await addActivityToDb(id, 'stage_change', description);
+
+                // Reload and refresh UI
+                await loadLeads();
+                renderLeads();
+                viewLead(id);
+            }
+
+            async function deleteLead(id) {
+                if (!confirm('Delete this lead permanently?')) return;
+                await deleteLeadFromDb(id);
+                await loadLeads();
+                closePanel();
+                renderLeads();
+                updateStats();
+            }
+
+            // ============ SAVE LEAD ============
+            async function saveLead(e) {
+                e.preventDefault();
+                const form = e.target;
+                const lead = {
+                    name: form.name.value,
+                    phone: form.phone.value,
+                    property: form.property.value || '-',
+                    location: form.location.value || '-',
+                    budgetMin: parseInt(form.budgetMin.value) || 0,
+                    budgetMax: parseInt(form.budgetMax.value) || 0,
+                    source: form.source.value,
+                    notes: form.notes.value,
+                    stage: 'new',
+                    score: Math.floor(Math.random() * 30) + 50,
+                    createdAt: new Date().toISOString()
+                };
+
+                await saveLeadToDb(lead);
+                await loadLeads();
+                closeModal();
+                renderLeads();
+                updateStats();
+            }
+
+            // ============ RENDER ============
+            function renderLeads() {
+                const tbody = document.querySelector('.table tbody');
+                const allLeads = getLeads();
+
+                // Get filter values
+                const filterStage = document.getElementById('filterStage')?.value || '';
+                const filterLocation = document.getElementById('filterLocation')?.value || '';
+                const filterProperty = document.getElementById('filterProperty')?.value || '';
+                const filterBudgetMin = parseInt(document.getElementById('filterBudgetMin')?.value) || 0;
+                const filterBudgetMax = parseInt(document.getElementById('filterBudgetMax')?.value) || 0;
+                const filterScore = document.getElementById('filterScore')?.value || '';
+                const filterSource = document.getElementById('filterSource')?.value || '';
+                const searchTerm = document.querySelector('.search-input')?.value?.toLowerCase() || '';
+
+                // Filter leads
+                let leads = allLeads;
+                if (filterStage) {
+                    leads = leads.filter(l => l.stage === filterStage);
+                }
+                if (filterLocation) {
+                    leads = leads.filter(l => l.location === filterLocation);
+                }
+                if (filterProperty) {
+                    leads = leads.filter(l => l.property === filterProperty);
+                }
+                if (filterBudgetMin > 0) {
+                    leads = leads.filter(l => l.budgetMax >= filterBudgetMin);
+                }
+                if (filterBudgetMax > 0) {
+                    leads = leads.filter(l => l.budgetMin <= filterBudgetMax);
+                }
+                if (filterScore === 'hot') {
+                    leads = leads.filter(l => l.score >= 70);
+                } else if (filterScore === 'warm') {
+                    leads = leads.filter(l => l.score >= 50 && l.score < 70);
+                } else if (filterScore === 'cold') {
+                    leads = leads.filter(l => l.score < 50);
+                }
+                if (filterSource) {
+                    leads = leads.filter(l => l.source === filterSource);
+                }
+                if (searchTerm) {
+                    leads = leads.filter(l =>
+                        l.name.toLowerCase().includes(searchTerm) ||
+                        l.phone.includes(searchTerm) ||
+                        l.location?.toLowerCase().includes(searchTerm)
+                    );
+                }
+
+                if (leads.length === 0) {
+                    const msg = allLeads.length === 0
+                        ? 'No leads yet. Click "Add New Lead" to get started!'
+                        : 'No leads match your filters.';
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary);">${msg}</td></tr>`;
+                    return;
+                }
+
+                const stageLabels = {
+                    'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
+                    'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
+                };
+
+                function getRemarks(lead) {
+                    // Show recent activity or notes as quick status
+                    const latest = lead.activities && lead.activities[0];
+                    if (lead.stage === 'booked') return '🎉 Token received';
+                    if (lead.stage === 'scheduled' && latest) return latest.description.slice(0, 20) + '...';
+                    if (lead.stage === 'lost') return '❌ Lost';
+                    if (latest) return latest.description.length > 20 ? latest.description.slice(0, 18) + '...' : latest.description;
+                    if (lead.notes) return lead.notes.length > 20 ? lead.notes.slice(0, 18) + '...' : lead.notes;
+                    return '-';
+                }
+
+                tbody.innerHTML = leads.map(lead => `
                 <tr>
                     <td>
                         <div class="lead-cell">
@@ -1949,98 +1951,101 @@
                     </td>
                 </tr>
             `).join('');
-        }
-
-        function updateStats() {
-            const leads = getLeads();
-            document.querySelectorAll('.stat-value')[0].textContent = leads.length;
-            document.querySelectorAll('.stat-value')[1].textContent = leads.filter(l => {
-                const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
-                return new Date(l.createdAt).getTime() > weekAgo;
-            }).length;
-            document.querySelectorAll('.stat-value')[2].textContent = leads.filter(l => l.score >= 70).length;
-        }
-
-        // ============ INIT ============
-        function initDemoData() {
-            if (localStorage.getItem('leadagent_initialized')) return;
-
-            const demoLeads = [
-                { id: 1, name: 'Vikram Mehta', phone: '9823456001', property: '3 BHK', location: 'Baner', budgetMin: 80, budgetMax: 120, source: 'Facebook', stage: 'visited', score: 85, notes: 'Looking for school nearby', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 2, name: 'Sneha Kulkarni', phone: '9823456002', property: '2 BHK', location: 'Hinjewadi', budgetMin: 50, budgetMax: 70, source: '99acres', stage: 'negotiating', score: 78, notes: 'NRI buyer, visiting next week', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 3, name: 'Ramesh Joshi', phone: '9823456003', property: '2 BHK', location: 'Chinchwad', budgetMin: 40, budgetMax: 55, source: 'Referral', stage: 'new', score: 72, notes: 'First time buyer', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 4, name: 'Dr. Anjali Deshmukh', phone: '9823456004', property: '4 BHK', location: 'Koregaon Park', budgetMin: 150, budgetMax: 250, source: 'Walk-in', stage: 'booked', score: 92, notes: 'Token paid - 5L', createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 5, name: 'Sunil Pawar', phone: '9823456005', property: '2 BHK', location: 'Hadapsar', budgetMin: 35, budgetMax: 45, source: 'Google', stage: 'contacted', score: 65, notes: 'Looking for PMAY benefits', createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 6, name: 'Priya Sharma', phone: '9823456006', property: '3 BHK', location: 'Wakad', budgetMin: 70, budgetMax: 90, source: 'Instagram', stage: 'scheduled', score: 75, notes: 'Site visit tomorrow 11am', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 7, name: 'Amit Kumar', phone: '9823456007', property: '1 BHK', location: 'Kharadi', budgetMin: 30, budgetMax: 40, source: 'MagicBricks', stage: 'new', score: 60, notes: 'Investment purpose', createdAt: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 8, name: 'Kavita Patil', phone: '9823456008', property: '2 BHK', location: 'Aundh', budgetMin: 55, budgetMax: 70, source: 'Referral', stage: 'visited', score: 80, notes: 'Liked Blue Ridge property', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 9, name: 'Rajesh Gupta', phone: '9823456009', property: 'Villa', location: 'Baner', budgetMin: 200, budgetMax: 350, source: 'Walk-in', stage: 'negotiating', score: 88, notes: 'Serious buyer, cash ready', createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 10, name: 'Meena Deshpande', phone: '9823456010', property: '3 BHK', location: 'Kothrud', budgetMin: 80, budgetMax: 100, source: 'Facebook', stage: 'contacted', score: 70, notes: 'Prefers older buildings', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 11, name: 'Arun Desai', phone: '9823456011', property: '2 BHK', location: 'Viman Nagar', budgetMin: 60, budgetMax: 75, source: '99acres', stage: 'lost', score: 45, notes: 'Bought from competitor', createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 12, name: 'Pooja Chavan', phone: '9823456012', property: '3 BHK', location: 'Hinjewadi', budgetMin: 75, budgetMax: 95, source: 'Google', stage: 'scheduled', score: 77, notes: 'Works at Infosys', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 13, name: 'Sanjay Bhosale', phone: '9823456013', property: 'Plot', location: 'Wakad', budgetMin: 40, budgetMax: 60, source: 'Referral', stage: 'new', score: 55, notes: 'Long-term investment', createdAt: new Date().toISOString() },
-                { id: 14, name: 'Neha Rane', phone: '9823456014', property: '2 BHK', location: 'Kharadi', budgetMin: 45, budgetMax: 55, source: 'Instagram', stage: 'visited', score: 73, notes: 'Young couple, first home', createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 15, name: 'Prakash Gaikwad', phone: '9823456015', property: '1 BHK', location: 'Hadapsar', budgetMin: 25, budgetMax: 35, source: 'MagicBricks', stage: 'contacted', score: 58, notes: 'Budget constrained', createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 16, name: 'Swati Kulkarni', phone: '9823456016', property: '3 BHK', location: 'Aundh', budgetMin: 90, budgetMax: 120, source: 'Walk-in', stage: 'booked', score: 95, notes: 'Agreement signed', createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 17, name: 'Mahesh Pawar', phone: '9823456017', property: 'Commercial', location: 'Koregaon Park', budgetMin: 100, budgetMax: 200, source: 'Referral', stage: 'negotiating', score: 82, notes: 'Shop for business', createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 18, name: 'Rekha Jadhav', phone: '9823456018', property: '2 BHK', location: 'Baner', budgetMin: 55, budgetMax: 65, source: 'Facebook', stage: 'new', score: 68, notes: 'Relocating from Mumbai', createdAt: new Date(Date.now() - 0.25 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 19, name: 'Vijay Shinde', phone: '9823456019', property: '4 BHK', location: 'Kothrud', budgetMin: 130, budgetMax: 180, source: 'Google', stage: 'lost', score: 40, notes: 'Changed mind', createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString() },
-                { id: 20, name: 'Anita Thakur', phone: '9823456020', property: '3 BHK', location: 'Viman Nagar', budgetMin: 85, budgetMax: 110, source: 'Referral', stage: 'visited', score: 79, notes: 'Airport proximity important', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
-            ];
-
-            saveLeads(demoLeads);
-            localStorage.setItem('leadagent_initialized', 'true');
-        }
-
-        // Expose functions to global scope for onclick handlers
-        window.viewLead = viewLead;
-        window.changeStage = changeStage;
-        window.deleteLead = deleteLead;
-        window.scheduleFollowUp = scheduleFollowUp;
-        window.logInteraction = logInteraction;
-        window.showLogForm = showLogForm;
-        window.openModal = openModal;
-        window.closeModal = closeModal;
-        window.openPanel = openPanel;
-        window.closePanel = closePanel;
-        window.saveLead = saveLead;
-        window.openFilterPanel = openFilterPanel;
-        window.closeFilterPanel = closeFilterPanel;
-        window.applyFilters = applyFilters;
-        window.clearFilters = clearFilters;
-
-
-        // Initialize app - run immediately if DOM ready, otherwise wait
-        async function initApp() {
-
-            document.querySelector('.btn-primary').onclick = openModal;
-
-            // Search listener (filters use Apply button)
-            document.querySelector('.search-input').addEventListener('input', renderLeads);
-
-            // Load leads from database (or localStorage if DB unavailable)
-            const tbody = document.querySelector('.table tbody');
-            tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading leads...</td></tr>';
-
-            await loadLeads();
-
-            // If no leads, initialize with demo data (for first-time users)
-            if (leadsCache.length === 0) {
-                initDemoData();
-                await loadLeads();
             }
 
-            renderLeads();
-            renderFollowups();
-            updateStats();
+            function updateStats() {
+                const leads = getLeads();
+                document.querySelectorAll('.stat-value')[0].textContent = leads.length;
+                document.querySelectorAll('.stat-value')[1].textContent = leads.filter(l => {
+                    const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+                    return new Date(l.createdAt).getTime() > weekAgo;
+                }).length;
+                document.querySelectorAll('.stat-value')[2].textContent = leads.filter(l => l.score >= 70).length;
+            }
 
-        }
+            // ============ INIT ============
+            function initDemoData() {
+                if (localStorage.getItem('leadagent_initialized')) return;
 
-        // Run init immediately if DOM ready, otherwise wait for DOMContentLoaded
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initApp);
-        } else {
-            initApp();
+                const demoLeads = [
+                    { id: 1, name: 'Vikram Mehta', phone: '9823456001', property: '3 BHK', location: 'Baner', budgetMin: 80, budgetMax: 120, source: 'Facebook', stage: 'visited', score: 85, notes: 'Looking for school nearby', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 2, name: 'Sneha Kulkarni', phone: '9823456002', property: '2 BHK', location: 'Hinjewadi', budgetMin: 50, budgetMax: 70, source: '99acres', stage: 'negotiating', score: 78, notes: 'NRI buyer, visiting next week', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 3, name: 'Ramesh Joshi', phone: '9823456003', property: '2 BHK', location: 'Chinchwad', budgetMin: 40, budgetMax: 55, source: 'Referral', stage: 'new', score: 72, notes: 'First time buyer', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 4, name: 'Dr. Anjali Deshmukh', phone: '9823456004', property: '4 BHK', location: 'Koregaon Park', budgetMin: 150, budgetMax: 250, source: 'Walk-in', stage: 'booked', score: 92, notes: 'Token paid - 5L', createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 5, name: 'Sunil Pawar', phone: '9823456005', property: '2 BHK', location: 'Hadapsar', budgetMin: 35, budgetMax: 45, source: 'Google', stage: 'contacted', score: 65, notes: 'Looking for PMAY benefits', createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 6, name: 'Priya Sharma', phone: '9823456006', property: '3 BHK', location: 'Wakad', budgetMin: 70, budgetMax: 90, source: 'Instagram', stage: 'scheduled', score: 75, notes: 'Site visit tomorrow 11am', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 7, name: 'Amit Kumar', phone: '9823456007', property: '1 BHK', location: 'Kharadi', budgetMin: 30, budgetMax: 40, source: 'MagicBricks', stage: 'new', score: 60, notes: 'Investment purpose', createdAt: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 8, name: 'Kavita Patil', phone: '9823456008', property: '2 BHK', location: 'Aundh', budgetMin: 55, budgetMax: 70, source: 'Referral', stage: 'visited', score: 80, notes: 'Liked Blue Ridge property', createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 9, name: 'Rajesh Gupta', phone: '9823456009', property: 'Villa', location: 'Baner', budgetMin: 200, budgetMax: 350, source: 'Walk-in', stage: 'negotiating', score: 88, notes: 'Serious buyer, cash ready', createdAt: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 10, name: 'Meena Deshpande', phone: '9823456010', property: '3 BHK', location: 'Kothrud', budgetMin: 80, budgetMax: 100, source: 'Facebook', stage: 'contacted', score: 70, notes: 'Prefers older buildings', createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 11, name: 'Arun Desai', phone: '9823456011', property: '2 BHK', location: 'Viman Nagar', budgetMin: 60, budgetMax: 75, source: '99acres', stage: 'lost', score: 45, notes: 'Bought from competitor', createdAt: new Date(Date.now() - 20 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 12, name: 'Pooja Chavan', phone: '9823456012', property: '3 BHK', location: 'Hinjewadi', budgetMin: 75, budgetMax: 95, source: 'Google', stage: 'scheduled', score: 77, notes: 'Works at Infosys', createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 13, name: 'Sanjay Bhosale', phone: '9823456013', property: 'Plot', location: 'Wakad', budgetMin: 40, budgetMax: 60, source: 'Referral', stage: 'new', score: 55, notes: 'Long-term investment', createdAt: new Date().toISOString() },
+                    { id: 14, name: 'Neha Rane', phone: '9823456014', property: '2 BHK', location: 'Kharadi', budgetMin: 45, budgetMax: 55, source: 'Instagram', stage: 'visited', score: 73, notes: 'Young couple, first home', createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 15, name: 'Prakash Gaikwad', phone: '9823456015', property: '1 BHK', location: 'Hadapsar', budgetMin: 25, budgetMax: 35, source: 'MagicBricks', stage: 'contacted', score: 58, notes: 'Budget constrained', createdAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 16, name: 'Swati Kulkarni', phone: '9823456016', property: '3 BHK', location: 'Aundh', budgetMin: 90, budgetMax: 120, source: 'Walk-in', stage: 'booked', score: 95, notes: 'Agreement signed', createdAt: new Date(Date.now() - 15 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 17, name: 'Mahesh Pawar', phone: '9823456017', property: 'Commercial', location: 'Koregaon Park', budgetMin: 100, budgetMax: 200, source: 'Referral', stage: 'negotiating', score: 82, notes: 'Shop for business', createdAt: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 18, name: 'Rekha Jadhav', phone: '9823456018', property: '2 BHK', location: 'Baner', budgetMin: 55, budgetMax: 65, source: 'Facebook', stage: 'new', score: 68, notes: 'Relocating from Mumbai', createdAt: new Date(Date.now() - 0.25 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 19, name: 'Vijay Shinde', phone: '9823456019', property: '4 BHK', location: 'Kothrud', budgetMin: 130, budgetMax: 180, source: 'Google', stage: 'lost', score: 40, notes: 'Changed mind', createdAt: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000).toISOString() },
+                    { id: 20, name: 'Anita Thakur', phone: '9823456020', property: '3 BHK', location: 'Viman Nagar', budgetMin: 85, budgetMax: 110, source: 'Referral', stage: 'visited', score: 79, notes: 'Airport proximity important', createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString() },
+                ];
+
+                saveLeads(demoLeads);
+                localStorage.setItem('leadagent_initialized', 'true');
+            }
+
+            // Expose functions to global scope for onclick handlers
+            window.viewLead = viewLead;
+            window.changeStage = changeStage;
+            window.deleteLead = deleteLead;
+            window.scheduleFollowUp = scheduleFollowUp;
+            window.logInteraction = logInteraction;
+            window.showLogForm = showLogForm;
+            window.openModal = openModal;
+            window.closeModal = closeModal;
+            window.openPanel = openPanel;
+            window.closePanel = closePanel;
+            window.saveLead = saveLead;
+            window.openFilterPanel = openFilterPanel;
+            window.closeFilterPanel = closeFilterPanel;
+            window.applyFilters = applyFilters;
+            window.clearFilters = clearFilters;
+
+
+            // Initialize app - run immediately if DOM ready, otherwise wait
+            async function initApp() {
+
+                document.querySelector('.btn-primary').onclick = openModal;
+
+                // Search listener (filters use Apply button)
+                document.querySelector('.search-input').addEventListener('input', renderLeads);
+
+                // Load leads from database (or localStorage if DB unavailable)
+                const tbody = document.querySelector('.table tbody');
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-secondary);"><i class="fas fa-spinner fa-spin"></i> Loading leads...</td></tr>';
+
+                await loadLeads();
+
+                // If no leads, initialize with demo data (for first-time users)
+                if (leadsCache.length === 0) {
+                    initDemoData();
+                    await loadLeads();
+                }
+
+                renderLeads();
+                renderFollowups();
+                updateStats();
+
+            }
+
+            // Run init immediately if DOM ready, otherwise wait for DOMContentLoaded
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initApp);
+            } else {
+                initApp();
+            }
+        } catch (err) {
+            console.error('[Lead Agent] CRITICAL ERROR:', err);
         }
     </script>
 </body>
