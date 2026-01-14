@@ -1896,7 +1896,38 @@
                         notes: leadData.notes
                     });
                 } else {
-                    // Add mode - create new lead
+                    // Add mode - check for duplicate phone first
+                    const normalizedPhone = leadData.phone.replace(/\D/g, '').slice(-10);
+                    const existingLead = getLeads().find(l => {
+                        const existingPhone = l.phone?.replace(/\D/g, '').slice(-10);
+                        return existingPhone === normalizedPhone;
+                    });
+
+                    if (existingLead) {
+                        const stageLabel = {
+                            'new': 'New Lead', 'contacted': 'Contacted', 'scheduled': 'Visit Scheduled',
+                            'visited': 'Visit Done', 'negotiating': 'Negotiating', 'booked': 'Booked', 'lost': 'Lost'
+                        }[existingLead.stage] || 'Unknown';
+
+                        const choice = confirm(
+                            `⚠️ A lead with this phone number already exists!\n\n` +
+                            `Name: ${existingLead.name}\n` +
+                            `Phone: ${existingLead.phone}\n` +
+                            `Stage: ${stageLabel}\n` +
+                            `Score: ${existingLead.score}\n\n` +
+                            `Click OK to view the existing lead, or Cancel to add anyway.`
+                        );
+
+                        if (choice) {
+                            // User wants to view existing lead
+                            closeModal();
+                            viewLead(existingLead.id);
+                            return;
+                        }
+                        // User clicked Cancel - proceed with adding
+                    }
+
+                    // Create new lead
                     leadData.stage = 'new';
                     leadData.score = Math.floor(Math.random() * 30) + 50;
                     leadData.createdAt = new Date().toISOString();
