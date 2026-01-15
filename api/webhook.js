@@ -5,7 +5,7 @@
 const SUPABASE_URL = 'https://eecngqtvlonuwfrjjwty.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlY25ncXR2bG9udXdmcmpqd3R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY2NzQ4NzAsImV4cCI6MjA1MjI1MDg3MH0.LkAt0cjQQrgMYOQz3jb55Y-UD8dIw-b40huXvCmH2GU';
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
     // Enable CORS for external webhook sources
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -18,9 +18,9 @@ export default async function handler(req, res) {
 
     // Only accept POST requests
     if (req.method !== 'POST') {
-        return res.status(405).json({ 
-            success: false, 
-            error: 'Method not allowed. Use POST.' 
+        return res.status(405).json({
+            success: false,
+            error: 'Method not allowed. Use POST.'
         });
     }
 
@@ -56,7 +56,7 @@ export default async function handler(req, res) {
             created_at: new Date().toISOString()
         };
 
-        // Insert into Supabase
+        // Insert into Supabase using fetch (available in Node 18+)
         const response = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
             method: 'POST',
             headers: {
@@ -94,4 +94,4 @@ export default async function handler(req, res) {
             details: error.message
         });
     }
-}
+};
