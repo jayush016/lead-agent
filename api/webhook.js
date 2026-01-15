@@ -1,9 +1,41 @@
 // Webhook endpoint for receiving leads from Make.com / Zapier
-// URL: https://lead-agent-inky.vercel.app/api/webhook
+// URL: https://lead-agent-s538.vercel.app/api/webhook
+
+// Using node-fetch for Node.js < 18 compatibility
+const https = require('https');
 
 // Supabase configuration (same as main app)
 const SUPABASE_URL = 'https://eecngqtvlonuwfrjjwty.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlY25ncXR2bG9udXdmcmpqd3R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY2NzQ4NzAsImV4cCI6MjA1MjI1MDg3MH0.LkAt0cjQQrgMYOQz3jb55Y-UD8dIw-b40huXvCmH2GU';
+
+// Helper function to make HTTPS request (no external dependencies)
+function httpsPost(url, data, headers) {
+    return new Promise((resolve, reject) => {
+        const urlObj = new URL(url);
+        const options = {
+            hostname: urlObj.hostname,
+            port: 443,
+            path: urlObj.pathname,
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                ...headers
+            }
+        };
+
+        const req = https.request(options, (res) => {
+            let body = '';
+            res.on('data', chunk => body += chunk);
+            res.on('end', () => {
+                resolve({ ok: res.statusCode >= 200 && res.statusCode < 300, status: res.statusCode, body });
+            });
+        });
+
+        req.on('error', reject);
+        req.write(JSON.stringify(data));
+        req.end();
+    });
+}
 
 module.exports = async function handler(req, res) {
     // Enable CORS for external webhook sources
@@ -56,34 +88,37 @@ module.exports = async function handler(req, res) {
             created_at: new Date().toISOString()
         };
 
-        // Insert into Supabase using fetch (available in Node 18+)
-        const response = await fetch(`${SUPABASE_URL}/rest/v1/leads`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
+        // Insert into Supabase using native https module
+        const result = await httpsPost(
+            `${SUPABASE_URL}/rest/v1/leads`,
+            newLead,
+            {
                 'apikey': SUPABASE_ANON_KEY,
                 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
                 'Prefer': 'return=representation'
-            },
-            body: JSON.stringify(newLead)
-        });
+            }
+        );
 
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error('Supabase error:', errorText);
+        if (!result.ok) {
+            console.error('Supabase error:', result.body);
             return res.status(500).json({
                 success: false,
                 error: 'Database insert failed',
-                details: errorText
+                details: result.body
             });
         }
 
-        const insertedLead = await response.json();
+        let insertedLead;
+        try {
+            insertedLead = JSON.parse(result.body);
+        } catch (e) {
+            insertedLead = result.body;
+        }
 
         return res.status(200).json({
             success: true,
             message: 'Lead created successfully',
-            lead: insertedLead[0] || insertedLead
+            lead: Array.isArray(insertedLead) ? insertedLead[0] : insertedLead
         });
 
     } catch (error) {
