@@ -5,8 +5,8 @@
 const https = require('https');
 
 // Supabase configuration (same as main app)
-const SUPABASE_URL = 'https://eecngqtvlonuwfrjjwty.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVlY25ncXR2bG9udXdmcmpqd3R5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzY2NzQ4NzAsImV4cCI6MjA1MjI1MDg3MH0.LkAt0cjQQrgMYOQz3jb55Y-UD8dIw-b40huXvCmH2GU';
+const SUPABASE_URL = 'https://vzjtedsejavynflitacw.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6anRlZHNlamF2eW5mbGl0YWN3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjgyMzQ2MTQsImV4cCI6MjA4MzgxMDYxNH0.CqOVSgXNLjvFRRgZ0ow6RAH6bSYwnuUZ59VtFp-bmZw';
 
 // Helper function to make HTTPS request (no external dependencies)
 function httpsPost(url, data, headers) {
